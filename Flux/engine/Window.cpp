@@ -20,6 +20,12 @@
 #include "Window.h"
 #include <iostream>
 
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#include <dwmapi.h>
+
+#pragma comment(lib, "dwmapi.lib")
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -36,6 +42,12 @@ namespace Flux {
 		}
 
 		m_window = glfwCreateWindow(m_width, m_height, m_title.c_str(), NULL, NULL);
+
+		HWND hwnd = glfwGetWin32Window(m_window);
+
+		BOOL useDarkMode = TRUE;
+
+		DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
 
 		if (!m_window) {
 			std::cerr << "ERROR: FAILED TO CREATE WINDOW" << std::endl;
@@ -54,9 +66,12 @@ namespace Flux {
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		io.ConfigFlags |= (1 << 14);
 
-		ImGui::StyleColorsDark();
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+		
 		
 		ImGui_ImplGlfw_InitForOpenGL(m_window, true);
 		ImGui_ImplOpenGL3_Init("#version 460");
@@ -74,7 +89,7 @@ namespace Flux {
 		return glfwWindowShouldClose(m_window);
 	}
 
-	void Window::update()
+	void Window::update() // Main render
 	{
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
@@ -83,9 +98,17 @@ namespace Flux {
 		ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
 		m_viewport.RenderViewport();
+		m_explorer.renderExplorer();
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+		if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+			GLFWwindow* backup_current_context = glfwGetCurrentContext();
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
+			glfwMakeContextCurrent(backup_current_context);
+		}
 
 		glfwPollEvents();
 		glfwSwapBuffers(m_window);

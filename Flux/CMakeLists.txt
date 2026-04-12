@@ -3,7 +3,16 @@
 #
 
 # Add source to this project's executable.
-add_executable (Flux "main.cpp"  "engine/Window.cpp" "engine/Window.h" "engine/gui/viewport/viewport.cpp" "engine/gui/viewport/viewport.h")
+add_executable (Flux 
+	"main.cpp"  
+	"engine/Window.cpp" 
+	"engine/Window.h"
+	"engine/gui/viewport/viewport.cpp" 
+	"engine/gui/viewport/viewport.h" 
+	"engine/gui/viewport/ribbon.cpp" 
+	"engine/gui/viewport/explorer.cpp" 
+	"engine/gui/viewport/explorer.h"
+)
 
 if(WIN32)
     set_target_properties(Flux PROPERTIES 
@@ -33,6 +42,7 @@ target_link_libraries(Flux
 	imgui::imgui
 	glm::glm
 	opengl32
+	dwmapi
 )
 
 # TODO: Add tests and install targets if needed.

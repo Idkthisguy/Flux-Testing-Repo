@@ -26,7 +26,7 @@ int main()
 	Flux::Window window(760, 600, "Flux");
 
 	while (!window.shouldClose()) {
-		window.clear(0.9f, 0.9f, 0.9f, 1.0f);
+		window.clear(0.1f, 0.1f, 0.1f, 1.0f);
 		window.update();
 	}
 	return 0;

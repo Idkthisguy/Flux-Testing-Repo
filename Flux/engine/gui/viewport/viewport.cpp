@@ -20,23 +20,15 @@
 #include "imgui.h"
 
 namespace Flux {
-	void Viewport::RenderViewport() {
-		ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration 
-            | ImGuiWindowFlags_NoMove 
-            | ImGuiWindowFlags_NoResize 
-            | ImGuiWindowFlags_NoBringToFrontOnFocus 
-            | ImGuiWindowFlags_NoNavFocus;
+    void Viewport::RenderViewport() {
 
 		ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-		ImGui::SetNextWindowPos(main_viewport->Pos);
-		ImGui::SetNextWindowSize(main_viewport->Size);
 
-		ImGui::Begin("Viewport", nullptr, window_flags);
+		ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_None);
 
-		if (ImGui::BeginChild("Viewport Header", ImVec2(0, 30), true)) {
-            ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+        ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
-            ImGui::SameLine();
+		if (ImGui::BeginChild("Viewport Header", ImVec2(0, 35), true, ImGuiWindowFlags_NoScrollbar)) {\
 
             if (ImGui::Button("Play")) {
             }
