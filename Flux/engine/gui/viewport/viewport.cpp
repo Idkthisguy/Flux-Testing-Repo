@@ -1,57 +1,40 @@
-/*
-* Flux is a free, versatile game engine built for developers of all skill levels.
-* Copyright (C) 2026  Zero Point Studio (Idkthisguy)
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #include "viewport.h"
-#include "imgui.h"
+#include "OpenGLManager.h"
+#include "3DRenderer.h"
+#include "Model.h"
 
 namespace Flux {
-	void Viewport::RenderViewport() {
-		ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration 
-            | ImGuiWindowFlags_NoMove 
-            | ImGuiWindowFlags_NoResize 
-            | ImGuiWindowFlags_NoBringToFrontOnFocus 
-            | ImGuiWindowFlags_NoNavFocus;
+    void Viewport::Init() {
+        glManager = std::make_unique<OpenGLManager>();
+        renderer = std::make_unique<Renderer3D>();
 
-		ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-		ImGui::SetNextWindowPos(main_viewport->Pos);
-		ImGui::SetNextWindowSize(main_viewport->Size);
+        glManager->Init(1280, 720);
+        renderer->Init();
 
-		ImGui::Begin("Viewport", nullptr, window_flags);
+        currentModel = std::make_unique<Model>(modelPath);
+    }
 
-		if (ImGui::BeginChild("Viewport Header", ImVec2(0, 30), true)) {
-            ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+    void Viewport::RenderViewport() {
+        ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar);
+        ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+        ImVec2 size = ImGui::GetContentRegionAvail();
 
-            ImGui::SameLine();
+        glManager->Resize((int)size.x, (int)size.y);
 
-            if (ImGui::Button("Play")) {
-            }
+        glManager->Bind();
 
-            ImGui::SameLine();
+        glViewport(0, 0, (int)size.x, (int)size.y);
 
-            if (ImGui::Button("Pause")) {
-            }
+        float aspectRatio = size.x / size.y;
+        glm::mat4 view = glm::lookAt(glm::vec3(0, 5, 15), glm::vec3(0), glm::vec3(0, 1, 0));
+        glm::mat4 proj = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 
-            ImGui::EndChild();
-		}
+        renderer->DrawScene(*currentModel, view, proj, (float)ImGui::GetTime());
 
-        ImGui::Text("3D Scene Here");
+        glManager->Unbind();
+
+        ImGui::Image((void*)(intptr_t)glManager->GetTexture(), size, ImVec2(0, 1), ImVec2(1, 0));
 
         ImGui::End();
-
     }
 }

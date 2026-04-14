@@ -16,11 +16,41 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <iostream>
+#include <string>
+#include <memory>
 #include "imgui.h"
 
+#include "../engine/OpenGLManager.h"
+#include "../engine/3DRenderer.h"
+#include "../engine/Model.h"
+
+extern float vertices[];
+
 namespace Flux {
+	class OpenGLManager;
+	class Renderer3D;
+	class Model;
+
 	class Viewport {
 	public:
+		void Init();
 		void RenderViewport();
+
+		std::string modelPath = "assets/monkey.obj";
+	private:
+		unsigned int fbo;
+		unsigned int textureColorBuffer;
+		unsigned int rbo;
+		unsigned int VAO, VBO;
+		unsigned int shaderProgram;
+		std::unique_ptr<OpenGLManager> glManager;
+		std::unique_ptr<Renderer3D> renderer;
+		std::unique_ptr<Model> currentModel;
 	};
 }

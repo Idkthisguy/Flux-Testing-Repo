@@ -22,9 +22,14 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #endif
 
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <string>
 #include "./gui/viewport/viewport.h"
+#include "./gui/viewport/explorer.h"
+#include "./gui/viewport/ribbon.h"
+#include "./gui/viewport/output.h"
+#include "./gui/viewport/properties.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -47,5 +52,9 @@ namespace Flux {
 		int m_width, m_height;
 		std::string m_title;
 		Viewport m_viewport;
+		Explorer m_explorer;
+		Ribbon m_ribbon;
+		Output m_output;
+		Properties m_properties;
 	};
 }

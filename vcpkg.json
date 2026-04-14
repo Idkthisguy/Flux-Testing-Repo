@@ -2,6 +2,7 @@
   "name": "flux",
   "version": "0.1.0",
   "dependencies": [
+    "glad",
     "glfw3",
     {
       "name": "imgui",
@@ -13,7 +14,8 @@
     },
     "opengl",
     "glm",
-    "stb"
+    "stb",
+    "assimp"
   ],
   "builtin-baseline": "0b88aacde46a853151730fbe7d0b7ee45f4b6864"
 }
