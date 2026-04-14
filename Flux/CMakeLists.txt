@@ -12,7 +12,12 @@ add_executable (Flux
 	"engine/gui/viewport/ribbon.cpp" 
 	"engine/gui/viewport/explorer.cpp" 
 	"engine/gui/viewport/explorer.h"
-)
+	"engine/gui/viewport/output.cpp" 
+	"engine/gui/viewport/properties.h" 
+	"engine/gui/viewport/properties.cpp" 
+	"engine/Model.h" 
+	"engine/3DRenderer.h"
+ "engine/OpenGLManager.cpp" "engine/3DRenderer.cpp" "engine/Model.cpp")
 
 if(WIN32)
     set_target_properties(Flux PROPERTIES 
@@ -24,6 +29,8 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(glad CONFIG REQUIRED)
+find_package(assimp CONFIG REQUIRED)
 
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 
@@ -43,6 +50,24 @@ target_link_libraries(Flux
 	glm::glm
 	opengl32
 	dwmapi
+	glad::glad
+	assimp::assimp
 )
 
-# TODO: Add tests and install targets if needed.
+target_include_directories(Flux PRIVATE 
+    "engine"
+    "engine/gui/viewport"
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+if(MSVC)
+    target_compile_options(Flux PRIVATE $<$<CONFIG:Release>:/O2 /GL>)
+    target_link_options(Flux PRIVATE $<$<CONFIG:Release>:/LTCG>)
+else()
+    target_compile_options(Flux PRIVATE $<$<CONFIG:Release>:-O3 -flto>)
+    target_link_options(Flux PRIVATE $<$<CONFIG:Release>:-flto>)
+endif()
+
+if(NOT MSVC)
+    set_target_properties(Flux PROPERTIES INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+endif()
