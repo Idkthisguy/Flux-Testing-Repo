@@ -34,6 +34,7 @@
 extern float vertices[];
 
 namespace Flux {
+	extern bool showSettings;
 	class OpenGLManager;
 	class Renderer3D;
 	class Model;
@@ -43,13 +44,14 @@ namespace Flux {
 		void Init();
 		void RenderViewport();
 
-		std::string modelPath = "assets/monkey.obj";
+		std::string modelPath = "assets/sphere.obj";
 	private:
 		unsigned int fbo;
 		unsigned int textureColorBuffer;
 		unsigned int rbo;
 		unsigned int VAO, VBO;
 		unsigned int shaderProgram;
+		unsigned int indexCount;
 		std::unique_ptr<OpenGLManager> glManager;
 		std::unique_ptr<Renderer3D> renderer;
 		std::unique_ptr<Model> currentModel;
