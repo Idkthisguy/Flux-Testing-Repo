@@ -19,10 +19,18 @@
 #pragma once
 
 #include "imgui.h"
+#include "viewport.h"
+#include <filesystem>
 
 namespace Flux {
+	class Viewport;
+
 	class Explorer {
 		public:
-			void renderExplorer();
+			void renderExplorer(Viewport& viewport);
+			void renderContentBrowser();
+		private:
+			void DrawDirectoryNodes(const std::filesystem::path& path);
+
 	};
 }

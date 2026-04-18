@@ -20,9 +20,20 @@
 #include "imgui.h"
 
 namespace Flux {
-	void Explorer::renderExplorer() {
+	void Explorer::renderExplorer(Viewport& viewport) {
 		ImGui::Begin("Explorer");
-		ImGui::Text("Scene Hierarchy Here");
+        for (int i = 0; i < viewport.sceneObjects.size(); i++) {
+            std::string label = viewport.sceneObjects[i].name;
+
+            bool isSelected = (viewport.selectedObjectIndex == i);
+            if (ImGui::Selectable(label.c_str(), isSelected)) {
+                viewport.selectedObjectIndex = i;
+            }
+
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
 		ImGui::End();
 	}
 }
