@@ -22,18 +22,74 @@
 namespace Flux {
 	void Explorer::renderExplorer(Viewport& viewport) {
 		ImGui::Begin("Explorer");
-        for (int i = 0; i < viewport.sceneObjects.size(); i++) {
-            std::string label = viewport.sceneObjects[i].name;
 
-            bool isSelected = (viewport.selectedObjectIndex == i);
-            if (ImGui::Selectable(label.c_str(), isSelected)) {
-                viewport.selectedObjectIndex = i;
-            }
+		if (ImGui::IsWindowHovered()) {
+			ImGui::SetWindowFocus();
+		}
 
-            if (isSelected) {
-                ImGui::SetItemDefaultFocus();
-            }
-        }
+		if (ImGui::TreeNodeEx("Project Files", ImGuiTreeNodeFlags_DefaultOpen)) {
+
+			DrawVirtualNodes(projectRoot);
+
+			ImGui::TreePop();
+		}
+
+		if (ImGui::IsWindowFocused() && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
+			if (ImGui::GetIO().MouseDragMaxDistanceSqr[ImGuiMouseButton_Right] < 10.0f) {
+				ImGui::OpenPopup("ContextMenuExplorer");
+			}
+		}
+
+		if (ImGui::BeginPopup("ContextMenuExplorer")) {
+			if (ImGui::BeginMenu("Add..")) {
+				if (ImGui::MenuItem("Add Folder")) {
+					projectRoot.children.push_back({ "New Folder", fileType::Folder });
+				}
+				if (ImGui::MenuItem("Add Script")) {
+					projectRoot.children.push_back({ "New Script", fileType::Script });
+				}
+				if (ImGui::MenuItem("Add Text")) {
+					projectRoot.children.push_back({ "New Text", fileType::Text });
+				}
+				if (ImGui::MenuItem("Add Model")) {
+					projectRoot.children.push_back({ "New Model", fileType::Model });
+				}
+
+				ImGui::EndMenu();
+			}
+			ImGui::EndPopup();
+		}
+
 		ImGui::End();
+	}
+
+	void Explorer::renderContentBrowser() {
+		ImGui::Begin("Content Browser");
+
+		DrawVirtualNodes(projectRoot);
+
+		if (ImGui::Button("Add Folder")) {
+			projectRoot.children.push_back({ "New Folder", fileType::Folder });
+		}
+
+		ImGui::End();
+	}
+
+	void Explorer::DrawVirtualNodes(virtualFile& file) {
+		std::string uniqueID = file.name + "##" + std::to_string((uintptr_t)&file);
+
+		if (file.type == fileType::Folder) {
+			if (ImGui::TreeNode(uniqueID.c_str())) {
+				for (auto& child : file.children) {
+					DrawVirtualNodes(child); // The recursive loop
+				}
+				ImGui::TreePop();
+			}
+		} else {
+			if (ImGui::Selectable(uniqueID.c_str())) {
+				// Future logic for file selection
+			}
+
+		}
 	}
 }

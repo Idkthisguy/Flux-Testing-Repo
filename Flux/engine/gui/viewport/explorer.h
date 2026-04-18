@@ -21,16 +21,28 @@
 #include "imgui.h"
 #include "viewport.h"
 #include <filesystem>
+#include <vector>
+#include <string>
 
 namespace Flux {
+	enum class fileType { Folder, Script, Text, Model };
+
+	struct virtualFile
+	{
+		std::string name;
+		fileType type;
+		std::vector<virtualFile> children;
+	};
 	class Viewport;
 
 	class Explorer {
 		public:
 			void renderExplorer(Viewport& viewport);
 			void renderContentBrowser();
+
+			virtualFile projectRoot = {"Project", fileType::Folder};
 		private:
-			void DrawDirectoryNodes(const std::filesystem::path& path);
+			void DrawVirtualNodes(virtualFile& file);
 
 	};
 }

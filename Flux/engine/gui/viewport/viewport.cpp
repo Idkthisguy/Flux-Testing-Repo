@@ -63,6 +63,9 @@ namespace Flux {
 		}
 
 		ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar);
+		if (ImGui::IsWindowHovered()) {
+			ImGui::SetWindowFocus();
+		}
 		ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
 		ImVec2 size = ImGui::GetContentRegionAvail();

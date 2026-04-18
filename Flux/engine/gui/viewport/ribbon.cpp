@@ -36,6 +36,9 @@ namespace Flux {
 			| ImGuiWindowFlags_MenuBar;
 
 		ImGui::Begin("###Ribbon", nullptr, window_flags);
+		if (ImGui::IsWindowHovered()) {
+			ImGui::SetWindowFocus();
+		}
 
 		if (ImGui::BeginMenuBar()) {
 			drawFileMenu();
