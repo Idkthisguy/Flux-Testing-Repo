@@ -19,7 +19,8 @@
 #include "explorer.h"
 #include "imgui.h"
 
-namespace Flux {
+namespace Flux
+{
 	void Explorer::renderExplorer(Viewport& viewport) {
 		ImGui::Begin("Explorer");
 
@@ -41,55 +42,55 @@ namespace Flux {
 		}
 
 		if (ImGui::BeginPopup("ContextMenuExplorer")) {
-		   if (ImGui::MenuItem("Create a new Project"))
+			if (ImGui::MenuItem("Create a new Project"))
 			{
-			    char* usrProfile = std::getenv("USERPROFILE");
-			    if (usrProfile)
-			    {
-			        std::filesystem::path docsPath = std::filesystem::path(usrProfile) / "Documents" / "FluxProjects" / "NewGame";
+				char* usrProfile = std::getenv("USERPROFILE");
+				if (usrProfile)
+				{
+					std::filesystem::path docsPath = std::filesystem::path(usrProfile) / "Documents" / "FluxProjects" / "NewGame";
 
-			        std::filesystem::path searchPath = std::filesystem::current_path();
-			        std::filesystem::path absoluteTemplate;
-			        bool found = false;
+					std::filesystem::path searchPath = std::filesystem::current_path();
+					std::filesystem::path absoluteTemplate;
+					bool found = false;
 
-			        for (int i = 0; i < 5; ++i) {
-			            if (std::filesystem::exists(searchPath / "templates" / "base_game_folder")) {
-			                absoluteTemplate = searchPath / "templates" / "base_game_folder";
-			                found = true;
-			                break;
-			            }
-			            if (searchPath.has_parent_path()) {
-			                searchPath = searchPath.parent_path();
-			            } else {
-			                break;
-			            }
-			        }
+					for (int i = 0; i < 5; ++i) {
+						if (std::filesystem::exists(searchPath / "templates" / "base_game_folder")) {
+							absoluteTemplate = searchPath / "templates" / "base_game_folder";
+							found = true;
+							break;
+						}
+						if (searchPath.has_parent_path()) {
+							searchPath = searchPath.parent_path();
+						} else {
+							break;
+						}
+					}
 
-			        if (found) {
-			            try {
-			                if (std::filesystem::exists(docsPath)) {
-			                    std::filesystem::remove_all(docsPath);
-			                }
+					if (found) {
+						try {
+							if (std::filesystem::exists(docsPath)) {
+								std::filesystem::remove_all(docsPath);
+							}
 
-			                std::filesystem::create_directories(docsPath);
+							std::filesystem::create_directories(docsPath);
 
-			                std::filesystem::copy(absoluteTemplate, docsPath, std::filesystem::copy_options::recursive);
+							std::filesystem::copy(absoluteTemplate, docsPath, std::filesystem::copy_options::recursive);
 
-			                this->activeFolderPath = docsPath;
+							this->activeFolderPath = docsPath;
 
-			            	projectRoot.name = docsPath.filename().string();
-			            	syncFiles(docsPath, projectRoot);
+							projectRoot.name = docsPath.filename().string();
+							syncFiles(docsPath, projectRoot);
 
-			                std::cout << "SUCCESS! found templates at: " << absoluteTemplate << std::endl;
-			                std::cout << "Project created at: " << docsPath << std::endl;
+							std::cout << "SUCCESS! found templates at: " << absoluteTemplate << std::endl;
+							std::cout << "Project created at: " << docsPath << std::endl;
 
-			            } catch (const std::filesystem::filesystem_error& e) {
-			                std::cerr << "COPY FAILED: " << e.what() << std::endl;
-			            }
-			        } else {
-			            std::cerr << "ERROR: Could not find 'templates/base_game_folder' anywhere above " << std::filesystem::current_path() << std::endl;
-			        }
-			    }
+						} catch (const std::filesystem::filesystem_error& e) {
+							std::cerr << "COPY FAILED: " << e.what() << std::endl;
+						}
+					} else {
+						std::cerr << "ERROR: Could not find 'templates/base_game_folder' anywhere above " << std::filesystem::current_path() << std::endl;
+					}
+				}
 			}
 
 			if (ImGui::BeginMenu("Add.."))
@@ -102,10 +103,10 @@ namespace Flux {
 					std::cout << "HEHEHEHEHAWUODHWADIOJAWDIAWBUIDAHWODOJAWHOWAFOAEWOBUFAUOFBUOAEWJOFAEBJOFAEKBJFAEBKJGBAKJEGBJASEGF" << std::endl;
 				}
 				if (ImGui::MenuItem("Add Script")) {
-					projectRoot.children.push_back({ "New Script", fileType::Script });
+					createNewFile("NewScript", ".lua");
 				}
 				if (ImGui::MenuItem("Add Text")) {
-					projectRoot.children.push_back({ "New Text", fileType::Text });
+					createNewFile("NewTextFile", ".txt");
 				}
 				if (ImGui::MenuItem("Add Model"))
 				{
@@ -114,7 +115,7 @@ namespace Flux {
 				ImGui::EndMenu();
 			}
 
-		    ImGui::EndPopup();
+			ImGui::EndPopup();
 		}
 		ImGui::End();
 
@@ -144,17 +145,6 @@ namespace Flux {
 				if (ImGui::MenuItem("Delete Folder"))
 				{
 					this->pathToDelete = file.path;
-					try
-					{
-						std::cout << file.path << std::endl;
-						std::filesystem::remove_all(file.path);
-						syncFiles(activeFolderPath, projectRoot);
-						std::cout << "FAHH2222222222222222222131312313" << std::endl;
-						} catch (const std::filesystem::filesystem_error& e)
-					{
-						std::cerr << "FAILED TO DELETE FOLDER: " << e.what() << std::endl;
-					}
-
 				}
 				ImGui::EndPopup();
 			}
@@ -171,14 +161,6 @@ namespace Flux {
 			if (ImGui::BeginPopupContextItem())
 			{
 				this->pathToDelete = file.path;
-				std::cout << "did obama had a dih?" << std::endl;
-				if (ImGui::MenuItem("Delete File"))
-				{
-					std::filesystem::remove_all(file.path);
-					syncFiles(file.path, projectRoot);
-
-					std::cout << "FAHH" << std::endl;
-				}
 				ImGui::EndPopup();
 			}
 
@@ -211,5 +193,21 @@ namespace Flux {
 
 			node.children.push_back(child);
 		}
+	}
+
+	void Explorer::createNewFile(const std::string& name, const std::string& ext)
+	{
+		std::filesystem::path fullPath = activeFolderPath / (name + ext);
+
+		int counter = 1;
+		while (std::filesystem::exists(fullPath))
+		{
+			fullPath = activeFolderPath / (name + " (" + std::to_string(counter) + ")" + ext);
+		}
+
+		std::ofstream file(fullPath);
+		file.close();
+
+		syncFiles(activeFolderPath, projectRoot);
 	}
 }
