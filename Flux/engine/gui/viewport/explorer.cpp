@@ -76,6 +76,10 @@ namespace Flux {
 			                std::filesystem::copy(absoluteTemplate, docsPath, std::filesystem::copy_options::recursive);
 
 			                this->activeFolderPath = docsPath;
+
+			            	projectRoot.name = docsPath.filename().string();
+			            	syncFiles(docsPath, projectRoot);
+
 			                std::cout << "SUCCESS! found templates at: " << absoluteTemplate << std::endl;
 			                std::cout << "Project created at: " << docsPath << std::endl;
 
@@ -87,26 +91,125 @@ namespace Flux {
 			        }
 			    }
 			}
+
+			if (ImGui::BeginMenu("Add.."))
+			{
+				if (ImGui::MenuItem("Add Folder")) {
+					std::cout << "gmmm" << std::endl;
+					std::filesystem::path newPath = activeFolderPath;
+					std::filesystem::create_directory(newPath);
+					syncFiles(activeFolderPath, projectRoot);
+					std::cout << "HEHEHEHEHAWUODHWADIOJAWDIAWBUIDAHWODOJAWHOWAFOAEWOBUFAUOFBUOAEWJOFAEBJOFAEKBJFAEBKJGBAKJEGBJASEGF" << std::endl;
+				}
+				if (ImGui::MenuItem("Add Script")) {
+					projectRoot.children.push_back({ "New Script", fileType::Script });
+				}
+				if (ImGui::MenuItem("Add Text")) {
+					projectRoot.children.push_back({ "New Text", fileType::Text });
+				}
+				if (ImGui::MenuItem("Add Model"))
+				{
+					projectRoot.children.push_back({ "New Model", fileType::Model });
+				}
+				ImGui::EndMenu();
+			}
+
 		    ImGui::EndPopup();
 		}
 		ImGui::End();
+
+		if (!pathToDelete.empty()) {
+			try {
+				if (std::filesystem::exists(pathToDelete)) {
+					std::filesystem::remove_all(pathToDelete);
+					// Now we refresh the whole list safely
+					syncFiles(activeFolderPath, projectRoot);
+					std::cout << "Chef successfully cleared the station." << std::endl;
+				}
+			} catch (const std::filesystem::filesystem_error& e) {
+				std::cerr << "Executioner failed: " << e.what() << std::endl;
+			}
+			pathToDelete = ""; // Reset the hit list
+		}
 	}
 
 	void Explorer::DrawVirtualNodes(virtualFile& file) {
 		std::string uniqueID = file.name + "##" + std::to_string((uintptr_t)&file);
 
 		if (file.type == fileType::Folder) {
-			if (ImGui::TreeNode(uniqueID.c_str())) {
+			bool node_open = ImGui::TreeNodeEx(uniqueID.c_str(), ImGuiTreeNodeFlags_SpanFullWidth);
+
+			if (ImGui::BeginPopupContextItem())
+			{
+				if (ImGui::MenuItem("Delete Folder"))
+				{
+					this->pathToDelete = file.path;
+					try
+					{
+						std::cout << file.path << std::endl;
+						std::filesystem::remove_all(file.path);
+						syncFiles(activeFolderPath, projectRoot);
+						std::cout << "FAHH2222222222222222222131312313" << std::endl;
+						} catch (const std::filesystem::filesystem_error& e)
+					{
+						std::cerr << "FAILED TO DELETE FOLDER: " << e.what() << std::endl;
+					}
+
+				}
+				ImGui::EndPopup();
+			}
+
+			if (node_open) {
 				for (auto& child : file.children) {
 					DrawVirtualNodes(child); // The recursive loop
 				}
 				ImGui::TreePop();
 			}
 		} else {
-			if (ImGui::Selectable(uniqueID.c_str())) {
-				// Future logic for file selection
+			ImGui::Selectable(uniqueID.c_str());
+
+			if (ImGui::BeginPopupContextItem())
+			{
+				this->pathToDelete = file.path;
+				std::cout << "did obama had a dih?" << std::endl;
+				if (ImGui::MenuItem("Delete File"))
+				{
+					std::filesystem::remove_all(file.path);
+					syncFiles(file.path, projectRoot);
+
+					std::cout << "FAHH" << std::endl;
+				}
+				ImGui::EndPopup();
 			}
 
+		}
+	}
+
+	void Explorer::syncFiles(const std::filesystem::path& path, virtualFile& node)
+	{
+		node.children.clear();
+		node.path = path;
+
+		for (const auto& entry : std::filesystem::directory_iterator(path))
+		{
+			virtualFile child;
+			child.name = entry.path().filename().string();
+			child.path = entry.path();
+
+			if (entry.is_directory())
+			{
+				child.type = fileType::Folder;
+				syncFiles(entry.path(), child);
+			} else
+			{
+				std::string ext = entry.path().extension().string();
+				if (ext == ".lua") child.type = fileType::Script;
+				else if (ext == ".txt") child.type = fileType::Text;
+				else if (ext == ".obj" || ext == ".fbx") child.type = fileType::Model;
+				else child.type = fileType::Text;
+			}
+
+			node.children.push_back(child);
 		}
 	}
 }

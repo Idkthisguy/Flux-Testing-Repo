@@ -31,6 +31,7 @@ namespace Flux {
 	{
 		std::string name;
 		fileType type;
+		std::filesystem::path path;
 		std::vector<virtualFile> children;
 	};
 	class Viewport;
@@ -41,8 +42,10 @@ namespace Flux {
 
 			std::filesystem::path activeFolderPath;
 			virtualFile projectRoot = {"Project", fileType::Folder};
+			std::filesystem::path pathToDelete = "";
 		private:
 			void DrawVirtualNodes(virtualFile& file);
+			void syncFiles(const  std::filesystem::path& path, virtualFile& node);
 
 	};
 }
