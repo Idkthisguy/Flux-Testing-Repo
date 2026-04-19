@@ -41,34 +41,54 @@ namespace Flux {
 		}
 
 		if (ImGui::BeginPopup("ContextMenuExplorer")) {
-			if (ImGui::BeginMenu("Create a new Project"))
+		   if (ImGui::MenuItem("Create a new Project"))
 			{
-				char* usrProfile = std::getenv("USERPROFILE");
-				std::filesystem::path docsPath = std::filesystem::path(usrProfile) / "Documents" / "FluxProjects" / "NewGame";
+			    char* usrProfile = std::getenv("USERPROFILE");
+			    if (usrProfile)
+			    {
+			        std::filesystem::path docsPath = std::filesystem::path(usrProfile) / "Documents" / "FluxProjects" / "NewGame";
 
-				std::filesystem::path projTemplatePath = std::filesystem::current_path() / "templates" / "base_game_folder";
+			        std::filesystem::path searchPath = std::filesystem::current_path();
+			        std::filesystem::path absoluteTemplate;
+			        bool found = false;
 
-				try
-				{
-					if (!std::filesystem::exists(docsPath))
-					{
-						std::filesystem::create_directories(docsPath);
-						std::filesystem::create_directories(projTemplatePath);
-						std::filesystem::copy(projTemplatePath, docsPath, std::filesystem::copy_options::recursive);
+			        for (int i = 0; i < 5; ++i) {
+			            if (std::filesystem::exists(searchPath / "templates" / "base_game_folder")) {
+			                absoluteTemplate = searchPath / "templates" / "base_game_folder";
+			                found = true;
+			                break;
+			            }
+			            if (searchPath.has_parent_path()) {
+			                searchPath = searchPath.parent_path();
+			            } else {
+			                break;
+			            }
+			        }
 
-						this->activeFolderPath = docsPath;
-						std::cout << "Successfully created at " << docsPath << std::endl;
-					}
-				} catch (const std::filesystem::filesystem_error& e) {
-					std::cerr << "Failed to copy template: " << e.what() << std::endl;
-				}
+			        if (found) {
+			            try {
+			                if (std::filesystem::exists(docsPath)) {
+			                    std::filesystem::remove_all(docsPath);
+			                }
 
-				ImGui::EndMenu();
+			                std::filesystem::create_directories(docsPath);
+
+			                std::filesystem::copy(absoluteTemplate, docsPath, std::filesystem::copy_options::recursive);
+
+			                this->activeFolderPath = docsPath;
+			                std::cout << "SUCCESS! found templates at: " << absoluteTemplate << std::endl;
+			                std::cout << "Project created at: " << docsPath << std::endl;
+
+			            } catch (const std::filesystem::filesystem_error& e) {
+			                std::cerr << "COPY FAILED: " << e.what() << std::endl;
+			            }
+			        } else {
+			            std::cerr << "ERROR: Could not find 'templates/base_game_folder' anywhere above " << std::filesystem::current_path() << std::endl;
+			        }
+			    }
 			}
-
-			ImGui::EndPopup();
+		    ImGui::EndPopup();
 		}
-
 		ImGui::End();
 	}
 
