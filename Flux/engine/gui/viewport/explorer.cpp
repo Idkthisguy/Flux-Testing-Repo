@@ -41,7 +41,9 @@ namespace Flux
 			}
 		}
 
-		if (ImGui::BeginPopup("ContextMenuExplorer")) {
+		if (ImGui::BeginPopup("ContextMenuExplorer"))
+		{
+
 			if (ImGui::MenuItem("Create a new Project"))
 			{
 				char* usrProfile = std::getenv("USERPROFILE");
@@ -54,8 +56,8 @@ namespace Flux
 					bool found = false;
 
 					for (int i = 0; i < 5; ++i) {
-						if (std::filesystem::exists(searchPath / "templates" / "base_game_folder")) {
-							absoluteTemplate = searchPath / "templates" / "base_game_folder";
+						if (std::filesystem::exists(searchPath / "templates" / "Project_Templates" / "base_game_folder_lua")) {
+							absoluteTemplate = searchPath / "templates" / "Project_Templates" /"base_game_folder_lua";
 							found = true;
 							break;
 						}
@@ -88,49 +90,29 @@ namespace Flux
 							std::cerr << "COPY FAILED: " << e.what() << std::endl;
 						}
 					} else {
-						std::cerr << "ERROR: Could not find 'templates/base_game_folder' anywhere above " << std::filesystem::current_path() << std::endl;
+						std::cerr << "ERROR: Could not find 'templates/Project_Templates/base_game_folder_lua' anywhere above " << std::filesystem::current_path() << std::endl;
 					}
 				}
 			}
-
-			if (ImGui::BeginMenu("Add.."))
-			{
-				if (ImGui::MenuItem("Add Folder")) {
-					std::cout << "gmmm" << std::endl;
-					std::filesystem::path newPath = activeFolderPath;
-					std::filesystem::create_directory(newPath);
-					syncFiles(activeFolderPath, projectRoot);
-					std::cout << "HEHEHEHEHAWUODHWADIOJAWDIAWBUIDAHWODOJAWHOWAFOAEWOBUFAUOFBUOAEWJOFAEBJOFAEKBJFAEBKJGBAKJEGBJASEGF" << std::endl;
-				}
-				if (ImGui::MenuItem("Add Script")) {
-					createNewFile("NewScript", ".lua");
-				}
-				if (ImGui::MenuItem("Add Text")) {
-					createNewFile("NewTextFile", ".txt");
-				}
-				if (ImGui::MenuItem("Add Model"))
-				{
-					projectRoot.children.push_back({ "New Model", fileType::Model });
-				}
-				ImGui::EndMenu();
-			}
-
 			ImGui::EndPopup();
 		}
 		ImGui::End();
+
+		if (refreshRequested) {
+			syncFiles(activeFolderPath, projectRoot);
+			refreshRequested = false;
+		}
 
 		if (!pathToDelete.empty()) {
 			try {
 				if (std::filesystem::exists(pathToDelete)) {
 					std::filesystem::remove_all(pathToDelete);
-					// Now we refresh the whole list safely
 					syncFiles(activeFolderPath, projectRoot);
-					std::cout << "Chef successfully cleared the station." << std::endl;
 				}
 			} catch (const std::filesystem::filesystem_error& e) {
 				std::cerr << "Executioner failed: " << e.what() << std::endl;
 			}
-			pathToDelete = ""; // Reset the hit list
+			pathToDelete = "";
 		}
 	}
 
@@ -146,12 +128,29 @@ namespace Flux
 				{
 					this->pathToDelete = file.path;
 				}
+				ImGui::Separator();
+				if (ImGui::BeginMenu("Add..")) {
+					if (ImGui::MenuItem("Folder")) {
+						createNewFolder("NewFolder");
+					}
+
+					if (ImGui::MenuItem("Script")) {
+						copyTemplateItem("scripts", "TemplateScript.lua", "NewScript", ".lua");
+					}
+
+					if (ImGui::BeginMenu("Model")) {
+						if (ImGui::MenuItem("Add Cube"))   copyTemplateItem("models", "cube.obj", "Cube", ".obj");
+						if (ImGui::MenuItem("Add Sphere")) copyTemplateItem("models", "sphere.obj", "Sphere", ".obj");
+						ImGui::EndMenu();
+					}
+					ImGui::EndMenu();
+				}
 				ImGui::EndPopup();
 			}
 
 			if (node_open) {
 				for (auto& child : file.children) {
-					DrawVirtualNodes(child); // The recursive loop
+					DrawVirtualNodes(child);
 				}
 				ImGui::TreePop();
 			}
@@ -195,19 +194,57 @@ namespace Flux
 		}
 	}
 
-	void Explorer::createNewFile(const std::string& name, const std::string& ext)
-	{
-		std::filesystem::path fullPath = activeFolderPath / (name + ext);
+	void Explorer::copyTemplateItem(const std::string& folderType, const std::string& templateName, const std::string& targetBaseName, const std::string& ext) {
+		std::filesystem::path searchPath = std::filesystem::current_path();
+		std::filesystem::path absoluteTemplatePath;
+		bool found = false;
 
-		int counter = 1;
-		while (std::filesystem::exists(fullPath))
-		{
-			fullPath = activeFolderPath / (name + " (" + std::to_string(counter) + ")" + ext);
+		for (int i = 0; i < 5; ++i) {
+			std::filesystem::path potentialPath = searchPath / "templates" / "File_Templates" / folderType / templateName;
+			if (std::filesystem::exists(potentialPath)) {
+				absoluteTemplatePath = potentialPath;
+				found = true;
+				break;
+			}
+			if (searchPath.has_parent_path()) searchPath = searchPath.parent_path();
+			else break;
 		}
 
-		std::ofstream file(fullPath);
-		file.close();
+		if (!found) {
+			std::cerr << "ERROR: Could not find template: " << templateName << std::endl;
+			return;
+		}
 
-		syncFiles(activeFolderPath, projectRoot);
+		std::filesystem::path targetPath = activeFolderPath / (targetBaseName + ext);
+		int counter = 1;
+		while (std::filesystem::exists(targetPath)) {
+			targetPath = activeFolderPath / (targetBaseName + " (" + std::to_string(counter) + ")" + ext);
+			counter++;
+		}
+
+		try {
+			std::filesystem::copy_file(absoluteTemplatePath, targetPath, std::filesystem::copy_options::overwrite_existing);
+			this->refreshRequested = true;
+			this->refreshPath = activeFolderPath;
+		} catch (const std::filesystem::filesystem_error& e) {
+			std::cerr << "File Delivery Failed: " << e.what() << std::endl;
+		}
+	}
+
+	void Explorer::createNewFolder(const std::string& name) {
+		std::filesystem::path targetPath = activeFolderPath / name;
+		int counter = 1;
+		while (std::filesystem::exists(targetPath)) {
+			targetPath = activeFolderPath / (name + " (" + std::to_string(counter) + ")");
+			counter++;
+		}
+
+		try {
+			std::filesystem::create_directories(targetPath);
+			this->refreshRequested = true;
+			this->refreshPath = activeFolderPath;
+		} catch (const std::filesystem::filesystem_error& e) {
+			std::cerr << "Folder Creation Failed: " << e.what() << std::endl;
+		}
 	}
 }

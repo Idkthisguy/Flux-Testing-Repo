@@ -48,6 +48,8 @@ namespace Flux {
 		public:
 			void renderExplorer(Viewport& viewport);
 
+			bool refreshRequested = false;
+			std::filesystem::path refreshPath;
 			std::filesystem::path activeFolderPath;
 			virtualFile projectRoot = {"Project", fileType::Folder};
 			creationTask pendingCreationTask;
@@ -55,6 +57,7 @@ namespace Flux {
 		private:
 			void DrawVirtualNodes(virtualFile& file);
 			void syncFiles(const  std::filesystem::path& path, virtualFile& node);
-			void createNewFile(const std::string& name, const std::string& ext);
-	};
+			void copyTemplateItem(const std::string& folderType, const std::string& templateName, const std::string& targetBaseName, const std::string& ext);
+			void createNewFolder(const std::string& name);
+;	};
 }
