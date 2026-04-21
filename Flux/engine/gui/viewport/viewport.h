@@ -31,6 +31,7 @@
 #include "../engine/Model.h"
 #include "../engine/mechanics/camera.h"
 #include "explorer.h"
+#include "ribbon.h"
 
 #include <unordered_map>
 
