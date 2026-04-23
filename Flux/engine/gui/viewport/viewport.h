@@ -50,6 +50,9 @@ namespace Flux {
 		glm::vec3 position = glm::vec3(0.0f);
 		glm::vec3 rotation = glm::vec3(0.0f);
 		glm::vec3 scale = glm::vec3(1.0f);
+		
+		int parentIndex = -1; // -1 means "no parent, i am at the root"
+		std::vector<int> children;
 
 		glm::mat4 GetTransformMatrix() {
 			float matrix[16];

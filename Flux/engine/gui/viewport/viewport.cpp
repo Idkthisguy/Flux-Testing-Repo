@@ -138,6 +138,16 @@ namespace Flux {
 
 			ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj),
 				currentOp, ImGuizmo::LOCAL, glm::value_ptr(modelMatrix));
+
+			if (ImGuizmo::IsUsing()) {
+				float t[3], r[3], s[3];
+
+				ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(modelMatrix), t, r, s);
+
+				target.position = glm::vec3(t[0], t[1], t[2]);
+				target.rotation = glm::vec3(r[0], r[1], r[2]);
+				target.scale = glm::vec3(s[0], s[1], s[2]);
+			}
 		}
 
 		if (ImGui::IsWindowFocused() && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {

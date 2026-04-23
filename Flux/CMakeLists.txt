@@ -17,7 +17,10 @@ add_executable (Flux
 	"engine/gui/viewport/properties.cpp" 
 	"engine/Model.h" 
 	"engine/3DRenderer.h"
- "engine/OpenGLManager.cpp" "engine/3DRenderer.cpp" "engine/Model.cpp" "engine/mechanics/camera.h")
+ "engine/OpenGLManager.cpp" "engine/3DRenderer.cpp" "engine/Model.cpp" "engine/mechanics/camera.h"
+		engine/gui/viewport/heiarchy.cpp
+		engine/gui/viewport/heiarchy.h
+)
 
 if(WIN32)
     set_target_properties(Flux PROPERTIES 

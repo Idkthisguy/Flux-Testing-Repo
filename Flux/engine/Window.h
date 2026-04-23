@@ -30,6 +30,7 @@
 #include "./gui/viewport/ribbon.h"
 #include "./gui/viewport/output.h"
 #include "./gui/viewport/properties.h"
+#include "./gui/viewport/heiarchy.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -56,5 +57,6 @@ namespace Flux {
 		Ribbon m_ribbon;
 		Output m_output;
 		Properties m_properties;
+		Heiarchy m_heiarchy;
 	};
 }

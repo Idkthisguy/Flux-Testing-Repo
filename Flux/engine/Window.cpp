@@ -139,7 +139,7 @@ namespace Flux {
 			ImGuiID dock_id_bottomRight;
 			ImGuiID dock_id_center = dockspace_id;
 
-			dock_id_left = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Left, 0.2f, nullptr, &dock_id_center);
+			dock_id_left = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Left, 0.32f, nullptr, &dock_id_center);
 			dock_id_bottom = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Down, 0.25f, nullptr, &dock_id_center);
 			dock_id_right = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.32f, nullptr, &dock_id_center);
 			dock_id_bottomRight = ImGui::DockBuilderSplitNode(dock_id_right, ImGuiDir_Down, 0.5f, nullptr, &dock_id_right);
@@ -148,6 +148,8 @@ namespace Flux {
 			ImGui::DockBuilderDockWindow("Explorer", dock_id_right);
 			ImGui::DockBuilderDockWindow("Output", dock_id_bottom);
 			ImGui::DockBuilderDockWindow("Properties", dock_id_bottomRight);
+			ImGui::DockBuilderDockWindow("Scene Heiarchy", dock_id_left);
+
 
 			ImGui::DockBuilderFinish(dockspace_id);
 		}
@@ -158,6 +160,7 @@ namespace Flux {
 		m_ribbon.renderRibbon();
 		m_output.renderOutput();
 		m_properties.renderProperties();
+		m_heiarchy.renderHeiarchy(m_viewport);
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
