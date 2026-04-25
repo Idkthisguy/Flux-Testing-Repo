@@ -156,7 +156,7 @@ namespace Flux {
 		m_explorer.renderExplorer(m_viewport);
 		m_ribbon.renderRibbon();
 		m_output.renderOutput();
-		m_properties.renderProperties();
+		m_properties.renderProperties(&m_heiarchy);
 		m_heiarchy.renderHeiarchy(m_viewport.activeProjectPath);
 
 		ImGui::Render();

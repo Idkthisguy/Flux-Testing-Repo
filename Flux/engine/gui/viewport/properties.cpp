@@ -114,6 +114,9 @@ void Properties::renderProperties(Heiarchy* h) {
         else
             ImGui::TextDisabled("(no model)");
 
+        ImGui::Separator();
+        ImGui::Spacing();
+
         ImGui::Spacing();
         ImGui::Text("Texture:");
         ImGui::SameLine();

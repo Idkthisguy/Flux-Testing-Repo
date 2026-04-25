@@ -73,7 +73,7 @@ void Heiarchy::AddLight(NodeType type, const std::string& name) {
             break;
         case NodeType::SpotLight:
             n.name      = name.empty() ? "Spot Light" : name;
-            n.textureID = tryLoadIcon("assets/icons/l_spot.png");
+            n.textureID = tryLoadIcon("assets/icons/l_spotlight.png");
             break;
         case NodeType::SurfaceLight:
             n.name      = name.empty() ? "Surface Light" : name;
@@ -163,6 +163,16 @@ void Heiarchy::DrawNode(int index) {
                 selectedIndex = (int)nodes.size() - 1;
             ImGui::EndPopup();
             return;
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem("Duplicate")) {
+            SceneNode copyNode = nodes[index];
+
+            copyNode.name = copyNode.name + " (Copy)";
+
+            nodes.push_back(copyNode);
+
+            selectedIndex = (int)nodes.size() - 1;
         }
         ImGui::EndPopup();
     }

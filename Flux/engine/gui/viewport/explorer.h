@@ -77,5 +77,6 @@ namespace Flux {
 		bool showNewProjectModal     = false;
 		char newProjectNameBuf[256]  = "NewGame";
 		std::filesystem::path pendingTemplateRoot;
+		std::filesystem::file_time_type lastFolderTime;
 	};
 }

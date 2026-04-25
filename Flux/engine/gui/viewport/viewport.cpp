@@ -34,6 +34,7 @@ void Viewport::Init() {
     camera    = std::make_unique<Camera>(glm::vec3(0.0f, 5.0f, 15.0f));
     glManager->Init(1280, 720);
     renderer->Init();
+    renderer->InitGrid();
 }
 
 bool Viewport::CheckSphereHit(glm::vec3 ro, glm::vec3 rd, glm::vec3 center, float radius) {
@@ -93,7 +94,7 @@ static ImVec2 WorldToScreen(glm::vec3 worldPos,
                              ImVec2 imagePos, ImVec2 size)
 {
     glm::vec4 clip = proj * view * glm::vec4(worldPos, 1.f);
-    if (std::abs(clip.w) < 1e-6f) return ImVec2(-1, -1);
+    if (clip.w <= 0.0f) return ImVec2(-1, -1);
     glm::vec3 ndc = glm::vec3(clip) / clip.w;
     float sx = (ndc.x * 0.5f + 0.5f) * size.x + imagePos.x;
     float sy = (1.f - (ndc.y * 0.5f + 0.5f)) * size.y + imagePos.y;
@@ -191,6 +192,10 @@ void Viewport::RenderViewport(Heiarchy& heiarchy)
     glm::mat4 view = camera->GetViewMatrix();
     glm::mat4 proj = glm::perspective(glm::radians(45.f), aspect, 0.1f, 1000.f);
 
+    ImVec2 imagePos = ImGui::GetCursorScreenPos();
+
+    ImGui::Checkbox("Show Grid", &this->showGrid);
+
     glManager->Resize((int)size.x, (int)size.y);
     glManager->Bind();
     glViewport(0, 0, (int)size.x, (int)size.y);
@@ -218,9 +223,12 @@ void Viewport::RenderViewport(Heiarchy& heiarchy)
         }
     }
 
+    if (showGrid) {
+        renderer->DrawGrid(view, proj, camera->Position);
+    }
+
     glManager->Unbind();
 
-    ImVec2 imagePos = ImGui::GetCursorScreenPos();
     ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(glManager->GetTexture())),
                  size, ImVec2(0,1), ImVec2(1,0));
 

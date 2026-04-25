@@ -47,6 +47,18 @@ namespace Flux
 			ImGui::SetWindowFocus();
 		}
 
+		static float refreshTimer = 0.0f;
+		refreshTimer += ImGui::GetIO().DeltaTime;
+
+		if (refreshTimer > 2.0f && std::filesystem::exists(activeFolderPath)) {
+			auto currentTime = std::filesystem::last_write_time(activeFolderPath);
+			if (currentTime != lastFolderTime) {
+				refreshRequested = true;
+				lastFolderTime = currentTime;
+			}
+			refreshTimer = 0.0f;
+		}
+
 		if (ImGui::TreeNodeEx("Project Files", ImGuiTreeNodeFlags_DefaultOpen)) {
 			DrawVirtualNodes(projectRoot);
 			ImGui::TreePop();
