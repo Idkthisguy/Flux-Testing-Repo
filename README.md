@@ -24,7 +24,6 @@ The engine is currently in early development, and is not yet ready for productio
 ![Screenshot](cool/FluxScreenshot.png)
 The first screenshot of the engine.
 
-
 ## Depedencies
 Here are the main libraries that Flux depends on:
 
@@ -33,14 +32,14 @@ Here are the main libraries that Flux depends on:
 - [GLAD](https://glad.dav1d.de/) - A library for loading OpenGL functions
 - [GLM](https://glm.g-truc.net/0.9.9/index.html) - A library for mathematics
 - [Assimp](https://www.assimp.org/) - A library for loading 3D models
-- [stb_image](https://github.com/nothings/stb) - A library for loading
+- [stb_image](https://github.com/nothings/stb) - A library for loading images
 - [ImGuizmo](https://github.com/cedricguillemet/imguizmo) - A library for manipulating objects in the viewport (especially for transformation)
 
 ## Top Contributors
 
 Small party, I know ;-;
 
-- [@Idkthisguy](https://github.com/Idkthisguy) - Creator and lead developer (also is [Zero Point Studio](https://github.com/Zero-Point-Studio))
+- [@Idkthisguy](https://github.com/Idkthisguy) - Creator and lead developer ([Zero Point Studio](https://github.com/Zero-Point-Studio))
 - [@ivagaguaig-source](https://github.com/ivagaguaig-source) - Graphics, Design & Testing
 
 ## License
