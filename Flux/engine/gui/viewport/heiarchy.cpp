@@ -22,6 +22,7 @@
 #include <cstring>
 #include <iostream>
 #include <filesystem>
+#include "../../utils/PathHelper.h"
 
 namespace Flux {
 
@@ -56,9 +57,12 @@ void Heiarchy::AddLight(NodeType type, const std::string& name) {
     SceneNode n;
     n.type = type;
 
-    auto tryLoadIcon = [&](const char* iconPath) -> unsigned int {
-        if (std::filesystem::exists(iconPath))
-            return TextureLoader::Load(iconPath);
+    auto tryLoadIcon = [&](const char* iconRelPath) -> unsigned int {
+        std::string absolutePath = PathHelper::GetAssetPath(iconRelPath);
+        if (std::filesystem::exists(absolutePath))
+            return TextureLoader::Load(absolutePath);
+        else
+            std::cerr << "Warning: Could not find icon at " << absolutePath << "\n";
         return 0;
     };
 
@@ -206,7 +210,8 @@ void Heiarchy::renderHeiarchy(const std::filesystem::path& activeProjectPath) {
         if (ImGui::BeginMenu("Add Object")) {
             if (ImGui::BeginMenu("Mesh")) {
                 auto tryAdd = [&](const char* rel, const char* addName) {
-                    std::string full = "assets/models/" + std::string(rel);
+                    std::string full = PathHelper::GetAssetPath(std::string("assets/models/") + rel);
+
                     if (!activeProjectPath.empty()) {
                         std::filesystem::path candidate = activeProjectPath / "models" / rel;
                         if (std::filesystem::exists(candidate)) full = candidate.string();

@@ -52,7 +52,7 @@ namespace Flux {
 		std::filesystem::path activeProjectPath;
 
 		bool showGrid = true;
-
+		bool vsyncEnabled = true;
 	private:
 		std::unique_ptr<OpenGLManager> glManager;
 		std::unique_ptr<Renderer3D>    renderer;

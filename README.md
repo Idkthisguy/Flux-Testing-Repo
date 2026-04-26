@@ -13,27 +13,37 @@ Flux is a versatile, high-performance game engine for 3D (and soon 2D).
 
 ## Current status
 
-The engine is currently in early development, and is not yet ready for production use. However, the core architecture is in place, and the following features are currently implemented:
-- 3D rendering (OpenGL)
+The engine is currently in early development and is not yet ready for production use. However, the core architecture is in place, and the following features are currently implemented:
+- 3D rendering (OpenGL 4.1+)
 - Viewport camera movement
 - Basic scene management
 - Model transformation (translation, rotation, and scaling)
 
+## Getting started
+Flux gomna be cross=platform on release (Except for macOS which is still in development)
+    
+| Windows (.zip)                                          | Linux (AppImage)                                                                                                              | Linux (.deb) |
+|:--------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------| :--- |
+| 1. Download the `.zip` from [Releases](../../releases). | 1. Download the `.AppImage` from [Releases](../../releases).                                                                  | 1. Download the `.deb` from [Releases](../../releases). |
+| 2. Extract the folder to wherever you want it.          | 2. Right-click the file -> Properties -> **Allow executing as program**. (or use `chmod +x Flux_Engine.AppImage` in terminal) | 2. Open your terminal in the download folder. |
+| 3. Run `Flux.exe` to start the engine.                  | 3. Double-click to run (or use `./Flux_Engine.AppImage` in terminal).                                                         | 3. Run `sudo dpkg -i FluxEngine-1.0.0.deb`. |
+|                                                         | **Note:** If it fails to launch, install `fuse2` or `fuse3` (e.g., `sudo pacman -S fuse2` on Arch).                           | 4. Run `sudo apt install -f` to fix dependencies, then type `Flux`. |
+
 ## Sneak peeks
 
 ![Screenshot](cool/FluxScreenshot.png)
-The first screenshot of the engine.
+*The first screenshot of the engine showing the 3D grid and viewport.*
 
-## Depedencies
-Here are the main libraries that Flux depends on:
+## Dependencies
+Flux is built on the shoulders of giants. We use modern 2026 techniques and these industry-standard libraries:
 
-- [Dear ImGui](https://github.com/ocornut/imgui) - A library for creating graphical user interfaces
-- [GLFW](https://www.glfw.org/) - A library for creating windows and handling input
-- [GLAD](https://glad.dav1d.de/) - A library for loading OpenGL functions
-- [GLM](https://glm.g-truc.net/0.9.9/index.html) - A library for mathematics
-- [Assimp](https://www.assimp.org/) - A library for loading 3D models
-- [stb_image](https://github.com/nothings/stb) - A library for loading images
-- [ImGuizmo](https://github.com/cedricguillemet/imguizmo) - A library for manipulating objects in the viewport (especially for transformation)
+- [Dear ImGui](https://github.com/ocornut/imgui) - Bloat-free Graphical User Interface
+- [GLFW](https://www.glfw.org/) - Windowing and Input handling
+- [GLAD](https://glad.dav1d.de/) - OpenGL Multi-Language Loader
+- [GLM](https://glm.g-truc.net/0.9.9/index.html) - OpenGL Mathematics
+- [Assimp](https://www.assimp.org/) - Open Asset Import Library (3D Models)
+- [stb_image](https://github.com/nothings/stb) - Single-file image loading
+- [ImGuizmo](https://github.com/cedricguillemet/imguizmo) - Manipulate objects directly in the viewport
 
 ## Top Contributors
 

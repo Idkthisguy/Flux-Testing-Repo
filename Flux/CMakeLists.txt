@@ -26,6 +26,9 @@ add_executable(Flux
         engine/Textureloader.h
         engine/stb_implementation.cpp
         "${CMAKE_CURRENT_SOURCE_DIR}/lib/glad.c"
+        engine/utils/pathHelper.h
+        engine/utils/pathHelper.cpp
+        engine/utils/pathHelper.cpp
 )
 
 if (NOT WIN32)
@@ -113,13 +116,18 @@ target_include_directories(Flux PRIVATE
         "engine"
         "engine/gui/viewport"
         "assets"
-        "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui"
-        "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/backends"
-        "${CMAKE_CURRENT_SOURCE_DIR}/lib/glad/include"
-        "${CMAKE_CURRENT_SOURCE_DIR}/lib/imguizmo"
-        "${CMAKE_CURRENT_SOURCE_DIR}/lib/stb"
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+if (NOT WIN32)
+    target_include_directories(Flux PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui"
+            "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/backends"
+            "${CMAKE_CURRENT_SOURCE_DIR}/lib/glad/include"
+            "${CMAKE_CURRENT_SOURCE_DIR}/lib/imguizmo"
+            "${CMAKE_CURRENT_SOURCE_DIR}/lib/stb"
+    )
+endif ()
 
 if (MSVC)
     target_compile_options(Flux PRIVATE $<$<CONFIG:Release>:/O2 /GL>)
@@ -141,6 +149,14 @@ if (NOT WIN32)
 
     add_custom_target(AppImage
             COMMAND ${CMAKE_COMMAND} -E rm -rf "AppDir"
+
+            COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/assets/flux.png" "${ICON_RGBA}"
+
+            COMMAND ${CMAKE_COMMAND} -E make_directory "AppDir/usr/share/flux/shaders"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "AppDir/usr/share/flux/assets"
+
+            COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders" "AppDir/usr/share/flux/shaders"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets" "AppDir/usr/share/flux/assets"
 
             COMMAND convert "${ICON_SRC}" -depth 8 RGBA:"${ICON_RGBA}_raw.rgba" || true
             COMMAND convert "${ICON_SRC}" -type TrueColorAlpha "${ICON_RGBA}"

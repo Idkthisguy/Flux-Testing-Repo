@@ -78,5 +78,6 @@ namespace Flux {
 		char newProjectNameBuf[256]  = "NewGame";
 		std::filesystem::path pendingTemplateRoot;
 		std::filesystem::file_time_type lastFolderTime;
+		char projectLocationBuf[512] = "";
 	};
 }

@@ -45,6 +45,8 @@ namespace Flux
             std::cerr << "ERROR: FAILED TO INITIALIZE GLFW" << std::endl;
         }
 
+        glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
+
         m_window = glfwCreateWindow(m_width, m_height, m_title.c_str(), NULL, NULL);
 
 #if defined(_WIN32)
@@ -87,7 +89,7 @@ namespace Flux
 
 
         ImGui_ImplGlfw_InitForOpenGL(m_window, true);
-        ImGui_ImplOpenGL3_Init("#version 450");
+        ImGui_ImplOpenGL3_Init("#version 410");
     }
 
     Window::~Window()
@@ -146,11 +148,11 @@ namespace Flux
             ImGuiID dock_id_bottomRight;
             ImGuiID dock_id_center = dockspace_id;
 
-            dock_id_left = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Left, 0.32f, nullptr, &dock_id_center);
+            dock_id_left = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Left, 0.20f, nullptr, &dock_id_center);
             dock_id_bottom =
                 ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Down, 0.25f, nullptr, &dock_id_center);
             dock_id_right =
-                ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.32f, nullptr, &dock_id_center);
+                ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.30f, nullptr, &dock_id_center);
             dock_id_bottomRight = ImGui::DockBuilderSplitNode(dock_id_right, ImGuiDir_Down, 0.5f, nullptr,
                                                               &dock_id_right);
 

@@ -23,6 +23,7 @@
 #include <vector>
 #include "Model.h"
 #include "./mechanics/Scenenode.h"
+#include <filesystem>
 
 namespace Flux {
 

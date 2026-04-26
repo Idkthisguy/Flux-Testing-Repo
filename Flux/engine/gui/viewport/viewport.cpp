@@ -161,8 +161,15 @@ void Viewport::DrawLightGizmos(Heiarchy& heiarchy,
 
 void Viewport::RenderViewport(Heiarchy& heiarchy)
 {
+    ImGuizmo::BeginFrame();
     if (showSettings) {
         if (ImGui::Begin("Viewport Settings", &showSettings)) {
+            if (ImGui::Checkbox("VSync", &vsyncEnabled))
+            {
+                glfwSwapInterval(vsyncEnabled ? 1 : 0);
+            }
+            ImGui::Separator();
+            ImGui::Text("Camera");
             ImGui::SliderFloat("Camera Sensitivity", &camera->MouseSensitivity, 0.01f, 0.5f);
             ImGui::SliderFloat("Move Speed",         &camera->MovementSpeed,    1.0f,  20.0f);
         }
@@ -315,6 +322,12 @@ void Viewport::RenderViewport(Heiarchy& heiarchy)
     ImGuizmo::SetDrawlist();
     ImGuizmo::SetRect(imagePos.x, imagePos.y, size.x, size.y);
 
+    if (ImGui::IsWindowFocused() || ImGui::IsWindowHovered()) {
+        ImGuizmo::Enable(true);
+    } else {
+        ImGuizmo::Enable(false);
+    }
+
     int sel = heiarchy.selectedIndex;
     if (sel >= 0 && sel < (int)heiarchy.nodes.size() && currentTool != 3) {
         ImGuizmo::OPERATION op = ImGuizmo::TRANSLATE;
@@ -323,6 +336,9 @@ void Viewport::RenderViewport(Heiarchy& heiarchy)
 
         auto& target = heiarchy.nodes[sel];
         glm::mat4 mm = target.GetTransformMatrix();
+
+        ImGuizmo::SetRect(imagePos.x, imagePos.y, size.x, size.y);
+        ImGuizmo::AllowAxisFlip(false);
 
         ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj),
                              op, ImGuizmo::LOCAL, glm::value_ptr(mm));

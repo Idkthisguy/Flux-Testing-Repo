@@ -22,6 +22,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include "utils/PathHelper.h"
 
 namespace Flux
 {
@@ -90,8 +91,8 @@ namespace Flux
 
     void Renderer3D::Init()
     {
-        std::string vShaderCode = LoadShaderFromFile("shaders/vertSrc.glsl");
-        std::string fShaderCode = LoadShaderFromFile("shaders/fragSrc.glsl");
+        std::string vShaderCode = LoadShaderFromFile(PathHelper::GetAssetPath("shaders/vertSrc.glsl"));
+        std::string fShaderCode = LoadShaderFromFile(PathHelper::GetAssetPath("shaders/fragSrc.glsl"));
 
         shaderProgram = linkProgram(vShaderCode.c_str(), fShaderCode.c_str());
         InitBillboard();
@@ -99,8 +100,8 @@ namespace Flux
 
     void Renderer3D::InitGrid()
     {
-        std::string vgridShaderCode = LoadShaderFromFile("shaders/gridVertSrc.glsl");
-        std::string fgridShaderCode = LoadShaderFromFile("shaders/gridFragSrc.glsl");
+        std::string vgridShaderCode = LoadShaderFromFile(PathHelper::GetAssetPath("shaders/gridVertSrc.glsl"));
+        std::string fgridShaderCode = LoadShaderFromFile(PathHelper::GetAssetPath("shaders/gridFragSrc.glsl"));
 
         gridProgram = linkProgram(vgridShaderCode.c_str(), fgridShaderCode.c_str());
         float vertices[] = {
@@ -142,8 +143,8 @@ namespace Flux
 
     void Renderer3D::InitBillboard()
     {
-        std::string bbvShaderCode = LoadShaderFromFile("shaders/bbVertSrc.glsl");
-        std::string bbfShaderCode = LoadShaderFromFile("shaders/bbFragSrc.glsl");
+        std::string bbvShaderCode = LoadShaderFromFile(PathHelper::GetAssetPath("shaders/bbVertSrc.glsl"));
+        std::string bbfShaderCode = LoadShaderFromFile(PathHelper::GetAssetPath("shaders/bbFragSrc.glsl"));
 
         billboardProgram = linkProgram(bbvShaderCode.c_str(), bbfShaderCode.c_str());
 

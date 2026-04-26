@@ -114,53 +114,44 @@ namespace Flux
 		ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 		ImGui::SetNextWindowSize(ImVec2(modalW, 0.f), ImGuiCond_Always);
 
-		if (ImGui::BeginPopupModal("Name Your Project", nullptr,
-		                           ImGuiWindowFlags_NoResize))
+		if (ImGui::BeginPopupModal("Name Your Project", nullptr, ImGuiWindowFlags_NoResize))
 		{
-			ImGui::Text("Project name:");
+			if (projectLocationBuf[0] == '\0') {
+				const char* home = std::getenv("HOME");
+				if (!home) home = std::getenv("USERPROFILE");
+
+				if (home) {
+					std::filesystem::path defaultPath = std::filesystem::path(home) / "FluxProjects";
+					std::strncpy(projectLocationBuf, defaultPath.string().c_str(), sizeof(projectLocationBuf)-1);
+				}
+			}
+
+			ImGui::Text("Project Name:");
+			ImGui::InputText("##projname", newProjectNameBuf, sizeof(newProjectNameBuf));
+
 			ImGui::Spacing();
-
-			ImGui::SetNextItemWidth(-1.f);
-
-			if (ImGui::IsWindowAppearing())
-				ImGui::SetKeyboardFocusHere();
-
-			bool confirm =
-			    ImGui::InputText("##projname", newProjectNameBuf,
-			                     sizeof(newProjectNameBuf),
-			                     ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::Text("Save Location:");
+			ImGui::InputText("##projlocation", projectLocationBuf, sizeof(projectLocationBuf));
 
 			ImGui::Spacing();
-
 			bool nameEmpty = (newProjectNameBuf[0] == '\0');
-			if (nameEmpty) ImGui::BeginDisabled();
-
 			float btnW = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
 
-			if (ImGui::Button("Create", ImVec2(btnW, 0)) || (confirm && !nameEmpty)) {
-				char* usrProfile = std::getenv("USERPROFILE");
-				if (usrProfile) {
-					std::filesystem::path docsBase =
-					    std::filesystem::path(usrProfile) /
-					    "Documents" / "FluxProjects";
+			if (nameEmpty) ImGui::EndDisabled();
 
-					std::filesystem::path docsPath =
-					    resolveUniqueName(docsBase, std::string(newProjectNameBuf), "");
+			if (ImGui::Button("Create", ImVec2(120, 0))) {
+				std::filesystem::path docsBase = std::filesystem::path(projectLocationBuf);
+				std::filesystem::path docsPath = resolveUniqueName(docsBase, std::string(newProjectNameBuf), "");
 
-					try {
-						std::filesystem::create_directories(docsPath);
-						std::filesystem::copy(
-						    pendingTemplateRoot, docsPath,
-						    std::filesystem::copy_options::recursive);
+				try {
+					std::filesystem::create_directories(docsPath);
+					std::filesystem::copy(pendingTemplateRoot, docsPath, std::filesystem::copy_options::recursive);
 
-						activeFolderPath = docsPath;
-						projectRoot.name = docsPath.filename().string();
-						syncFiles(docsPath, projectRoot);
-
-						std::cout << "Project created at: " << docsPath << "\n";
-					} catch (const std::filesystem::filesystem_error& e) {
-						std::cerr << "COPY FAILED: " << e.what() << "\n";
-					}
+					activeFolderPath = docsPath;
+					projectRoot.name = docsPath.filename().string();
+					syncFiles(docsPath, projectRoot);
+				} catch (const std::filesystem::filesystem_error& e) {
+					std::cerr << "FAILED: " << e.what() << "\n";
 				}
 				ImGui::CloseCurrentPopup();
 			}
