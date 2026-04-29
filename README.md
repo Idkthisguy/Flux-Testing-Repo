@@ -22,11 +22,11 @@ The engine is currently in early development and is not yet ready for production
 ## Getting started
 Flux gomna be cross=platform on release (Except for macOS which is still in development)
     
-| Windows (.zip)                                          | Linux (AppImage)                                                                                                              | Linux (.deb) |
-|:--------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------| :--- |
-| 1. Download the `.zip` from [Releases](../../releases). | 1. Download the `.AppImage` from [Releases](../../releases).                                                                  | 1. Download the `.deb` from [Releases](../../releases). |
-| 2. Extract the folder to wherever you want it.          | 2. Right-click the file -> Properties -> **Allow executing as program**. (or use `chmod +x Flux_Engine.AppImage` in terminal) | 2. Open your terminal in the download folder. |
-| 3. Run `Flux.exe` to start the engine.                  | 3. Double-click to run (or use `./Flux_Engine.AppImage` in terminal).                                                         | 3. Run `sudo dpkg -i FluxEngine-1.0.0.deb`. |
+| Windows (.zip)                                          | Linux (AppImage)                                                                                                              | Linux (.deb)                                                        |
+| :------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------ |
+| 1. Download the `.zip` from [Releases](../../releases). | 1. Download the `.AppImage` from [Releases](../../releases).                                                                  | 1. Download the `.deb` from [Releases](../../releases).             |
+| 2. Extract the folder to wherever you want it.          | 2. Right-click the file -> Properties -> **Allow executing as program**. (or use `chmod +x Flux_Engine.AppImage` in terminal) | 2. Open your terminal in the download folder.                       |
+| 3. Run `Flux.exe` to start the engine.                  | 3. Double-click to run (or use `./Flux_Engine.AppImage` in terminal).                                                         | 3. Run `sudo dpkg -i FluxEngine-1.0.0.deb`.                         |
 |                                                         | **Note:** If it fails to launch, install `fuse2` or `fuse3` (e.g., `sudo pacman -S fuse2` on Arch).                           | 4. Run `sudo apt install -f` to fix dependencies, then type `Flux`. |
 
 ## Sneak peeks
@@ -44,13 +44,13 @@ Flux is built on the shoulders of giants. We use modern 2026 techniques and thes
 - [Assimp](https://www.assimp.org/) - Open Asset Import Library (3D Models)
 - [stb_image](https://github.com/nothings/stb) - Single-file image loading
 - [ImGuizmo](https://github.com/cedricguillemet/imguizmo) - Manipulate objects directly in the viewport
+- [LinuxDeploy](https://github.com/linuxdeploy/linuxdeploy) - Used to make AppImages for Linux
 
 ## Top Contributors
 
 Small party, I know ;-;
 
 - [@Idkthisguy](https://github.com/Idkthisguy) - Creator and lead developer ([Zero Point Studio](https://github.com/Zero-Point-Studio))
-- [@ivagaguaig-source](https://github.com/ivagaguaig-source) - Graphics, Design & Testing
 
 ## License
 Flux is licensed under the GNU General Public License v3.0 (GPL-3.0). See [LICENSE](LICENSE.txt) for more details.

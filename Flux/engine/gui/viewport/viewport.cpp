@@ -1,21 +1,3 @@
-/*
-* Flux is a free, versatile game engine built for developers of all skill levels.
-* Copyright (C) 2026  Zero Point Studio (Idkthisguy)
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #include "viewport.h"
 #include "OpenGLManager.h"
 #include "3DRenderer.h"
@@ -40,15 +22,6 @@ void Viewport::Init() {
 
     renderer->InitSkybox();
 
-    std::vector<std::string> faces = {
-        PathHelper::GetAssetPath("Flux/assets/skybox/skybox_r.png"),
-        PathHelper::GetAssetPath("Flux/assets/skybox/skybox_l.png"),
-        PathHelper::GetAssetPath("Flux/assets/skybox/skybox_t.png"),
-        PathHelper::GetAssetPath("Flux/assets/skybox/skybox_d.png"),
-        PathHelper::GetAssetPath("Flux/assets/skybox/skybox_f.png"),
-        PathHelper::GetAssetPath("Flux/assets/skybox/skybox_b.png")
-    };
-    unsigned int skyboxID = TextureLoader::LoadCubemap(faces);
 }
 
 bool Viewport::CheckSphereHit(glm::vec3 ro, glm::vec3 rd, glm::vec3 center, float radius) {
@@ -246,7 +219,7 @@ void Viewport::RenderViewport(Heiarchy& heiarchy)
         }
     }
 
-    renderer->DrawSkybox(camera->GetViewMatrix(), proj, skyboxID);
+    renderer->DrawSkybox(camera->GetViewMatrix(), proj);
 
     if (showGrid) {
         renderer->DrawGrid(view, proj, camera->Position);

@@ -1,7 +1,5 @@
 ﻿cmake_minimum_required(VERSION 3.20)
 
-# 1. TOOLCHAIN SETUP (The GPS)
-# Only use Windows VCPKG if we are actually on Windows.
 if (WIN32)
     if (DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
         set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")

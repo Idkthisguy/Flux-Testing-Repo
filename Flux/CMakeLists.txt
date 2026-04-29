@@ -25,7 +25,6 @@ add_executable(Flux
         engine/Textureloader.cpp
         engine/Textureloader.h
         engine/stb_implementation.cpp
-        "${CMAKE_CURRENT_SOURCE_DIR}/lib/glad.c"
         engine/utils/pathHelper.h
         engine/utils/pathHelper.cpp
         engine/utils/pathHelper.cpp
@@ -52,8 +51,9 @@ if (WIN32)
 endif ()
 
 find_package(OpenGL REQUIRED)
-find_package(glm REQUIRED)
+find_package(glm CONFIG REQUIRED)
 find_package(assimp REQUIRED)
+find_package(Stb REQUIRED)
 
 if (WIN32)
     find_package(glfw3 CONFIG REQUIRED)
@@ -63,6 +63,8 @@ if (WIN32)
 else ()
     find_package(glfw3 REQUIRED)
 endif ()
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets/models" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
@@ -78,7 +80,6 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/engine/gui/viewport" DESTINATION "${CMAKE
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/engine/mechanics" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/shaders" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/lib" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets/skybox" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
     set_property(TARGET Flux PROPERTY CXX_STANDARD 20)
