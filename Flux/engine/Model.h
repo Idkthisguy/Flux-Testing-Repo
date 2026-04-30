@@ -1,5 +1,3 @@
- 
-
 #pragma once
 #include <glad/glad.h>
 #include <assimp/Importer.hpp>

@@ -51,7 +51,7 @@ void Heiarchy::AddLight(NodeType type, const std::string& name) {
     switch (type) {
         case NodeType::DirectionalLight:
             n.name      = name.empty() ? "Directional Light" : name;
-            n.textureID = tryLoadIcon("assets/icons/l_directional.png");
+            n.textureID = tryLoadIcon("assets/icons/l_dir.png");
             break;
         case NodeType::PointLight:
             n.name      = name.empty() ? "Point Light" : name;
@@ -59,11 +59,7 @@ void Heiarchy::AddLight(NodeType type, const std::string& name) {
             break;
         case NodeType::SpotLight:
             n.name      = name.empty() ? "Spot Light" : name;
-            n.textureID = tryLoadIcon("assets/icons/l_spotlight.png");
-            break;
-        case NodeType::SurfaceLight:
-            n.name      = name.empty() ? "Surface Light" : name;
-            n.textureID = tryLoadIcon("assets/icons/l_surface.png");
+            n.textureID = tryLoadIcon("assets/icons/l_spot.png");
             break;
         default:
             n.name = name;

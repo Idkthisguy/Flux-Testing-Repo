@@ -51,6 +51,3 @@ Flux is built on the shoulders of giants. We use modern 2026 techniques and thes
 Small party, I know ;-;
 
 - [@Idkthisguy](https://github.com/Idkthisguy) - Creator and lead developer ([Zero Point Studio](https://github.com/Zero-Point-Studio))
-
-## License
-Flux is licensed under the GNU General Public License v3.0 (GPL-3.0). See [LICENSE](LICENSE.txt) for more details.

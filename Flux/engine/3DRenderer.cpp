@@ -327,7 +327,6 @@ namespace Flux
         setMat4(skyboxProgram, "projection", proj);
 
         glBindVertexArray(skyboxVAO);
-        glActiveTexture(GL_TEXTURE0);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
