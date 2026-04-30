@@ -33,6 +33,7 @@ add_executable(Flux
 if (NOT WIN32)
     target_sources(Flux PRIVATE
             "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/imgui.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/imgui_demo.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/imgui_draw.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/imgui_widgets.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/imgui_tables.cpp"
@@ -41,6 +42,7 @@ if (NOT WIN32)
             "${CMAKE_CURRENT_SOURCE_DIR}/lib/imguizmo/ImGuizmo.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/lib/glad/include"
             "${CMAKE_CURRENT_SOURCE_DIR}/lib/stb"
+            "${CMAKE_CURRENT_SOURCE_DIR}/lib/glad/src/glad.c"
     )
 endif ()
 
@@ -53,13 +55,13 @@ endif ()
 find_package(OpenGL REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(assimp REQUIRED)
-find_package(Stb REQUIRED)
 
 if (WIN32)
     find_package(glfw3 CONFIG REQUIRED)
     find_package(imgui CONFIG REQUIRED)
     find_package(glad CONFIG REQUIRED)
     find_package(imguizmo CONFIG REQUIRED)
+    find_package(Stb REQUIRED)
 else ()
     find_package(glfw3 REQUIRED)
 endif ()
