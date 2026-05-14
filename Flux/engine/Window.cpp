@@ -15,6 +15,7 @@
 #include "imgui_internal.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include <SDL3/SDL.h>
 
 namespace Flux
 {
@@ -78,8 +79,6 @@ namespace Flux
         ImGuiIO& io = ImGui::GetIO();
 
         io.Fonts->AddFontDefault();
-
-        m_texteditor.SetupFont();
 
         (void)io;
 
@@ -178,7 +177,7 @@ namespace Flux
         m_output.renderOutput();
         m_properties.renderProperties(&m_heiarchy);
         m_heiarchy.renderHeiarchy(m_viewport.activeProjectPath);
-        m_texteditor.Render();
+        m_texteditor.Render("Text Editor###UniqueEditorID", ImVec2(-1, -1), false);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

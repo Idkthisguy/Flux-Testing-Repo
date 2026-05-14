@@ -208,8 +208,6 @@ namespace Flux
 
 		if (file.name == ".flux" && file.type == fileType::Folder) return;
 
-		textEditor->explorerPtr = this;
-
 		if (renamingNode == &file) {
 			ImGui::SetNextItemWidth(-1);
 			ImGui::SetKeyboardFocusHere();
@@ -353,9 +351,17 @@ namespace Flux
 		} else {
 			std::string dispName = file.name;
 
+			// NEW CODE
 			bool hasBackup = std::find(filesWithBackups.begin(), filesWithBackups.end(), file.path) != filesWithBackups.end();
 
-			if ((textEditor != nullptr && textEditor->filePath == file.path && textEditor->isUnsaved) || hasBackup) {
+			bool isCurrentlyOpen = (activeFilePath == file.path);
+
+			// Check the raw editor to see if the text was changed since we loaded it
+			if (isCurrentlyOpen && textEditor != nullptr) {
+				isEditorUnsaved = textEditor->IsTextChanged(); 
+			}
+
+			if ((isCurrentlyOpen && isEditorUnsaved) || hasBackup) {
 				dispName += " *";
 			}
 
@@ -365,11 +371,18 @@ namespace Flux
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
 				if (file.path.extension() == ".lua") {
 					if (textEditor != nullptr) {
-						textEditor->scriptName = file.name;
-						textEditor->filePath = file.path;
+						activeScriptName = file.name;
+						activeFilePath = file.path;
 
-						textEditor->openFile();
-						textEditor->isVisible = true;
+						std::ifstream ifs(file.path);
+						if (ifs.is_open()) {
+							std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+							
+							textEditor->SetText(content); 
+							isEditorVisible = true;
+							textEditor->Render("Text Editor###UniqueEditorID", ImVec2(-1, -1), false);
+							ifs.close();
+						}
 
 						ImGui::SetWindowFocus("Text Editor");
 					}

@@ -5,6 +5,8 @@
 #include "luaEngine.h"
 #include "../texteditor.h"
 
+class TextEditor;	
+
 namespace Flux {
 	enum ToolMode {
 		TOOL_MOVE = 0,
@@ -13,14 +15,13 @@ namespace Flux {
 	};
 
 	class LuaEngine;
-	class TextEditor;
 
 	class Ribbon {
 		public:
 			void renderRibbon();
 
 			LuaEngine* luaEnginePtr = nullptr;
-			TextEditor* textEditorPtr = nullptr;
+			::TextEditor* textEditorPtr = nullptr;
 		private:
 			void drawFileMenu();
 			void drawEditMenu();

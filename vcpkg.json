@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "dependencies": [
     "glad",
+    "sdl3",
+    "sdl3-ttf",
     "glfw3",
     {
       "name": "imgui",

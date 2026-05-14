@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.20)
+﻿cmake_minimum_required(VERSION 3.10)
 project(FluxEngine LANGUAGES C CXX)
 
 set(RESOURCES "")
@@ -67,6 +67,7 @@ find_package(OpenGL REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(assimp REQUIRED)
 find_package(sol2 CONFIG REQUIRED)
+find_package(SDL3 CONFIG REQUIRED)
 
 if (WIN32)
     find_package(glfw3 CONFIG REQUIRED)
@@ -110,6 +111,7 @@ target_link_libraries(Flux PRIVATE
         glm::glm
         assimp::assimp
         sol2::sol2
+        SDL3::SDL3
         ${OPENGL_LIBRARIES}
         "${CMAKE_CURRENT_SOURCE_DIR}/lib/luajit/src/lua51.lib"
 )
@@ -142,6 +144,7 @@ target_include_directories(Flux PRIVATE
         "assets"
         ${CMAKE_CURRENT_SOURCE_DIR}
         "${CMAKE_CURRENT_SOURCE_DIR}/lib/luajit/src"
+        "lib/luajit/src"
 )
 
 if (NOT WIN32)

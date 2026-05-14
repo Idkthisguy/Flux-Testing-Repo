@@ -9,6 +9,8 @@
 #include <string>
 #include "../lib/portable-file-dialogs.h"
 
+class TextEditor;
+
 namespace Flux {
 	enum class fileType { Folder, Script, Text, Model, Texture };
 
@@ -28,7 +30,6 @@ namespace Flux {
 	};
 
 	class Viewport;
-	class TextEditor;
 
 	class Explorer {
 	public:
@@ -45,7 +46,12 @@ namespace Flux {
 
 		void scanForBackups();
 
-		TextEditor* textEditor;
+		::TextEditor* textEditor = nullptr;
+
+		std::filesystem::path activeFilePath;
+		std::string activeScriptName;
+		bool isEditorVisible = false;
+		bool isEditorUnsaved = false;
 
 	private:
 		void DrawVirtualNodes(virtualFile& file);
