@@ -69,6 +69,7 @@ namespace Flux
 
         m_ribbon.luaEnginePtr = &m_luaEngine;
         m_ribbon.textEditorPtr = &m_texteditor;
+        m_texteditor.SetLanguageDefinition(TextEditor::LanguageDefinition::Lua());
 
         m_viewport.Init();
         m_heiarchy.setup();
@@ -177,7 +178,37 @@ namespace Flux
         m_output.renderOutput();
         m_properties.renderProperties(&m_heiarchy);
         m_heiarchy.renderHeiarchy(m_viewport.activeProjectPath);
-        m_texteditor.Render("Text Editor###UniqueEditorID", ImVec2(-1, -1), false);
+        
+        
+        if (m_explorer.isEditorVisible) {
+            
+            std::string editorTitle = "Text Editor - " + m_explorer.activeScriptName;
+            if (m_explorer.isEditorUnsaved) {
+                editorTitle += " *";
+            }
+            editorTitle += "###UniqueEditorID";
+
+            ImGui::Begin(editorTitle.c_str(), &m_explorer.isEditorVisible);
+
+            if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) {
+                ImGuiIO& io = ImGui::GetIO();
+                if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S)) {
+                    if (!m_explorer.activeFilePath.empty()) {
+                        std::ofstream outFile(m_explorer.activeFilePath);
+                        if (outFile.is_open()) {
+                            outFile << m_texteditor.GetText();
+                            outFile.close();    
+
+                            m_explorer.isEditorUnsaved = false;
+                        }
+                    }
+                }
+            }
+            
+            m_texteditor.Render("CodeEditorWidget"); 
+            
+            ImGui::End();
+        }
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

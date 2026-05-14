@@ -351,14 +351,14 @@ namespace Flux
 		} else {
 			std::string dispName = file.name;
 
-			// NEW CODE
 			bool hasBackup = std::find(filesWithBackups.begin(), filesWithBackups.end(), file.path) != filesWithBackups.end();
 
 			bool isCurrentlyOpen = (activeFilePath == file.path);
 
-			// Check the raw editor to see if the text was changed since we loaded it
 			if (isCurrentlyOpen && textEditor != nullptr) {
-				isEditorUnsaved = textEditor->IsTextChanged(); 
+				if (textEditor->IsTextChanged()) {
+					isEditorUnsaved = true;
+				}
 			}
 
 			if ((isCurrentlyOpen && isEditorUnsaved) || hasBackup) {
@@ -380,7 +380,6 @@ namespace Flux
 							
 							textEditor->SetText(content); 
 							isEditorVisible = true;
-							textEditor->Render("Text Editor###UniqueEditorID", ImVec2(-1, -1), false);
 							ifs.close();
 						}
 

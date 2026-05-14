@@ -9,7 +9,8 @@
 namespace Flux {
 	class Output {
 	public:
-		inline static std::vector<std::string> logs;
+		inline static std::string logBuffer;
+		
 		static void addLog(const std::string& log);
 		void renderOutput();
 	};
