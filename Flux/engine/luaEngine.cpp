@@ -78,4 +78,17 @@ namespace Flux {
             }
         }
     }
+
+    void LuaEngine::runAllScriptsInFolder(const std::string& folderPath) {
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(folderPath)) {
+            if (entry.path().extension() == ".lua") {
+                std::ifstream ifs(entry.path());
+                if (ifs.is_open()) {
+                    std::string code{(std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>())};
+                    runScript(code);
+                    ifs.close();
+                }
+            }
+        }
+    }
 }

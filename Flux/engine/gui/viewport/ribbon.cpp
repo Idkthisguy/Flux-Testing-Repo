@@ -93,6 +93,9 @@ namespace Flux {
 					luaEnginePtr->isRunning = false;
 				}
 			}
+
+			editorLocked = !editorLocked;
+        	playToggledFrame = true;
 		}
 	}
 }

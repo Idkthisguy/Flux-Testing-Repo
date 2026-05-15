@@ -8,6 +8,8 @@
 #include <string>
 #include <iostream>
 #include "gui/viewport/output.h"
+#include <filesystem>
+#include <fstream>
 
 namespace Flux {
     class Output;
@@ -26,6 +28,8 @@ namespace Flux {
             void stop();
 
             void runScript(const std::string& code);
+
+            void runAllScriptsInFolder(const std::string& folderPath);
 
         private:
             sol::state lua;
