@@ -260,6 +260,7 @@ void Heiarchy::renderHeiarchy(const std::filesystem::path& activeProjectPath) {
                 if (ImGui::MenuItem("Cube"))   tryAdd("cube.obj",   "Cube");
                 if (ImGui::MenuItem("Sphere")) tryAdd("sphere.obj", "Sphere");
                 if (ImGui::MenuItem("Monkey")) tryAdd("monkey.obj", "Monkey");
+                if (ImGui::MenuItem("Plane")) tryAdd("plane.obj", "Plane");
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Light")) {

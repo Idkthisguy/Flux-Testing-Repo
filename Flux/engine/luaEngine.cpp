@@ -13,6 +13,36 @@ namespace Flux {
 
             Output::addLog(full_msg);
 	    };
+
+        sol::table inputTable = lua.create_table();
+        inputTable["isKeyDown"] = [](const std::string& key) -> bool {
+            const bool* state = SDL_GetKeyboardState(NULL);
+            SDL_Scancode scancode = SDL_GetScancodeFromName(key.c_str());
+            return state[scancode] != 0;
+        };
+
+        inputTable["anyKey"] = []() -> bool {
+            const bool* state = SDL_GetKeyboardState(NULL);
+            for (int i = 0; i < SDL_SCANCODE_COUNT; ++i) {
+                if (state[i]) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        inputTable["getKeyPressed"] = []() -> std::string {
+            const bool* state = SDL_GetKeyboardState(NULL);
+            for (int i = 0; i < 512; ++i) {
+                if (state[i]) {
+                    const char* name = SDL_GetScancodeName((SDL_Scancode)i);
+                    if (name) return std::string(name);
+                }
+            }
+            return "";
+        };
+
+        lua["Input"] = inputTable;
     }
 
    void LuaEngine::runScript(const std::string& code) {

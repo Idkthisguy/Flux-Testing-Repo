@@ -20,16 +20,21 @@
 #include "heiarchy.h"
 #include "Textureloader.h"
 
+#include "ribbon.h"
+
 namespace Flux {
 
     extern bool showSettings;
     class OpenGLManager;
     class Renderer3D;
+    class Ribbon;
 
     class Viewport {
     public:
         void Init();
         void RenderViewport(Heiarchy& heiarchy);
+
+        Ribbon* ribbonPtr = nullptr;
 
         std::unique_ptr<Camera> camera;
 

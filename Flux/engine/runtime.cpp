@@ -63,6 +63,9 @@ void Runtime::Update()
 
     SDL_GL_MakeCurrent(m_window, m_glContext);
 
+    float gameTime = 14.0f;
+    glm::vec3 gameSunDir = glm::vec3(0, -1, 0);
+
     SDL_Event e;
     while (SDL_PollEvent(&e))
     {
@@ -90,10 +93,15 @@ void Runtime::Update()
     glm::mat4 proj = glm::perspective(glm::radians(70.0f), (float)w / (float)h, 0.1f, 2000.0f);
     glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, glm::vec3(0, 1, 0));
 
-    m_renderer.DrawSkybox(view, proj, glm::vec3(190, 190, 190), 20.0f, false);
+    m_renderer.DrawSkybox(view, proj, gameSunDir, gameTime, true);
 
     for (auto &node : m_gameNodes)
     {
+        if (node.isLightingNode) {
+            gameTime = node.light.timeOfDay;
+            gameSunDir = node.light.direction;
+        }
+
         if (node.model != nullptr)
         {
             glm::mat4 model = node.GetTransformMatrix();

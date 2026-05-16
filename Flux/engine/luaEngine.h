@@ -11,6 +11,8 @@
 #include <filesystem>
 #include <fstream>
 
+#include <SDL3/SDL.h>
+
 namespace Flux {
     class Output;
 

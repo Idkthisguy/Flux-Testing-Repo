@@ -71,6 +71,8 @@ namespace Flux
         m_ribbon.textEditorPtr = &m_texteditor;
         m_texteditor.SetLanguageDefinition(TextEditor::LanguageDefinition::Lua());
 
+        m_viewport.ribbonPtr = &m_ribbon;
+
         m_viewport.Init();
         m_heiarchy.setup();
         m_luaEngine.init();
