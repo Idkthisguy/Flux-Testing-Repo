@@ -1,4 +1,7 @@
 ﻿cmake_minimum_required(VERSION 3.10)
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(VCPKG_TARGET_TRIPLET "x64-windows-llvm" CACHE STRING "")
+endif()
 project(FluxEngine LANGUAGES C CXX)
 
 set(RESOURCES "")
@@ -39,6 +42,7 @@ add_executable(Flux
         engine/luaEngine.cpp
         engine/runtime.h
         engine/runtime.cpp
+        engine/mechanics/SplashScreen.h
 )
 
 if (NOT WIN32)
@@ -115,7 +119,6 @@ target_link_libraries(Flux PRIVATE
         sol2::sol2
         SDL3::SDL3
         ${OPENGL_LIBRARIES}
-        "${CMAKE_CURRENT_SOURCE_DIR}/lib/luajit/src/lua51.lib"
 )
 
 if (WIN32)
@@ -126,6 +129,7 @@ if (WIN32)
             imguizmo::imguizmo
             opengl32
             dwmapi
+            "${CMAKE_CURRENT_SOURCE_DIR}/lib/luajit/src/lua51.lib"
     )
     target_link_options(Flux PRIVATE 
         "$<$<CONFIG:Debug>:/SUBSYSTEM:CONSOLE>"

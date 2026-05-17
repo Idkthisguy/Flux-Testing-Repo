@@ -111,9 +111,13 @@ void Viewport::DrawLightGizmos(Heiarchy &heiarchy, glm::mat4 view, glm::mat4 pro
             continue;
         if (node.isLightingNode)
             continue;
+        if (node.textureID == 0 && node.type == NodeType::Camera)
+        {
+            std::string iconPath = PathHelper::GetAssetPath("assets/icons/camera.png");
+            node.textureID = TextureLoader::Load(iconPath);
+        }
 
         bool selected = (heiarchy.selectedIndex == i);
-        renderer->DrawBillboard(node.textureID, node.position, 0.5f, view, proj);
         ImVec2 sp = WorldToScreen(node.position, view, proj, imagePos, sz);
         if (sp.x < imagePos.x || sp.x > imagePos.x + sz.x)
             continue;
@@ -155,20 +159,6 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
 {
     ImGuizmo::BeginFrame();
     ImGuiIO &io = ImGui::GetIO();
-
-    if (showSettings)
-    {
-        if (ImGui::Begin("Viewport Settings", &showSettings))
-        {
-            if (ImGui::Checkbox("VSync", &vsyncEnabled))
-                glfwSwapInterval(vsyncEnabled ? 1 : 0);
-            ImGui::Separator();
-            ImGui::Text("Camera");
-            ImGui::SliderFloat("Sensitivity", &camera->MouseSensitivity, 0.01f, 0.5f);
-            ImGui::SliderFloat("Move Speed", &camera->MovementSpeed, 1.0f, 50.0f);
-        }
-        ImGui::End();
-    }
 
     ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar);
     if (ImGui::IsWindowHovered())
@@ -258,8 +248,6 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
     glm::mat4 view = camera->GetViewMatrix();
     glm::mat4 proj = glm::perspective(glm::radians(70.0f), aspect, 0.1f, 2000.f);
 
-    ImVec2 imagePos = ImGui::GetCursorScreenPos();
-
     glm::vec3 sunDir = glm::vec3(0.f, -1.f, 0.f);
     float timeOfDay = 14.f;
     bool hasLightingNode = false;
@@ -319,12 +307,39 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
     if (showGrid)
         renderer->DrawGrid(view, proj, camera->Position);
 
+    for (auto &node : heiarchy.nodes)
+    {
+        if (node.type != NodeType::Camera)
+            continue;
+
+        if (node.textureID == 0)
+        {
+            std::string p = PathHelper::GetAssetPath("assets/icons/camera.png");
+            if (std::filesystem::exists(p))
+                node.textureID = TextureLoader::Load(p);
+        }
+
+        if (node.textureID != 0)
+            renderer->DrawBillboard(node.textureID, node.position, 0.5f, view, proj);
+        else
+        {
+
+            if (node.model)
+            {
+                glm::mat4 camMat = node.GetTransformMatrix();
+
+                camMat = glm::scale(camMat, glm::vec3(0.25f));
+                renderer->DrawScene(*node.model, 0, camMat, view, proj, camera->Position, heiarchy.nodes);
+            }
+        }
+    }
+
     glManager->Unbind();
 
     ImGui::Image(reinterpret_cast<void *>(static_cast<intptr_t>(glManager->GetTexture())), sz, ImVec2(0, 1),
                  ImVec2(1, 0));
 
-    ImGui::Checkbox("Show Grid", &showGrid);
+    ImVec2 imagePos = ImGui::GetCursorScreenPos();
 
     ImVec2 mousePos = io.MousePos;
     ImVec2 mouseInCanvas(mousePos.x - imagePos.x, mousePos.y - imagePos.y);
@@ -498,6 +513,8 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
             ImGui::EndPopup();
         }
     }
+
+    ImGui::Checkbox("Show Grid", &showGrid);
 
     ImGui::End();
 }

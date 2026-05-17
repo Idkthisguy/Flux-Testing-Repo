@@ -71,6 +71,8 @@ namespace Flux {
         bool isMainCamera = false;
         bool isLocked = false;
 
+        float fov = 70.0f;
+
         glm::mat4 GetTransformMatrix() const {
             float m[16];
             float t[3] = { position.x, position.y, position.z };

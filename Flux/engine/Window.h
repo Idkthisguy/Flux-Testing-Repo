@@ -23,7 +23,11 @@
 #include "imgui_impl_opengl3.h"
 #include "stb_image.h"
 
+#include "mechanics/SplashScreen.h"
+
 #include "runtime.h"
+
+#include "mechanics/SceneSerializer.h"
 
 #include <SDL3/SDL.h> // For runtime
 
@@ -40,6 +44,8 @@ namespace Flux {
 
 		GLFWwindow* getNativeWindow() const { return m_window; };
 
+		bool m_pendingStop = false;
+
 	private:
 		std::vector<SceneNode> m_runtimeNodes;
 
@@ -55,6 +61,8 @@ namespace Flux {
 		TextEditor m_texteditor;
 		LuaEngine m_luaEngine;
 		Runtime m_runtime;
+
+		SceneSerializer m_sceneSerializer;
 
 		void StartRuntimeEngine();
 		void StopRuntimeEngine();

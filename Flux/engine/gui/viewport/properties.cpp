@@ -246,6 +246,10 @@ void Properties::renderProperties(Heiarchy* h) {
                 }
             }
         }
+
+        BeginTable2Col();
+        SliderRow("FOV", node.fov, 10.0f, 170.0f, "%.1f°");
+        ImGui::EndTable();
     }
 
     if (node.type == NodeType::Mesh) {

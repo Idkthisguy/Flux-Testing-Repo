@@ -22,6 +22,7 @@ namespace Flux
     Window::Window(int width, int height, const std::string& title)
         : m_width(width), m_height(height), m_title(title)
     {
+
         if (!glfwInit())
         {
             std::cerr << "ERROR: FAILED TO INITIALIZE GLFW" << std::endl;
@@ -30,6 +31,15 @@ namespace Flux
         glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
         m_window = glfwCreateWindow(m_width, m_height, m_title.c_str(), NULL, NULL);
+
+        if (!m_window)
+        {
+            const char* desc = nullptr;
+            glfwGetError(&desc);
+            std::cerr << "FATAL: glfwCreateWindow failed: " << (desc ? desc : "unknown") << std::endl;
+            glfwTerminate();
+            throw std::runtime_error("glfwCreateWindow failed");
+        }
 
 #if defined(_WIN32)
         HWND hwnd = glfwGetWin32Window(m_window);
@@ -43,11 +53,6 @@ namespace Flux
         SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
     }
 #endif
-
-        if (!m_window)
-        {
-            std::cerr << "ERROR: FAILED TO CREATE WINDOW" << std::endl;
-        }
 
         glfwMakeContextCurrent(m_window);
 
@@ -66,16 +71,17 @@ namespace Flux
         }
 
         m_explorer.textEditor = &m_texteditor;
+        m_explorer.ribbonPtr = &m_ribbon;
 
         m_ribbon.luaEnginePtr = &m_luaEngine;
         m_ribbon.textEditorPtr = &m_texteditor;
+        m_ribbon.explorerPtr = &m_explorer;
+        m_ribbon.heiarchyPtr = &m_heiarchy;
+        m_ribbon.viewportPtr = &m_viewport;
+        m_ribbon.LoadPreferences();
         m_texteditor.SetLanguageDefinition(TextEditor::LanguageDefinition::Lua());
 
         m_viewport.ribbonPtr = &m_ribbon;
-
-        m_viewport.Init();
-        m_heiarchy.setup();
-        m_luaEngine.init();
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -92,6 +98,15 @@ namespace Flux
 
         ImGui_ImplGlfw_InitForOpenGL(m_window, true);
         ImGui_ImplOpenGL3_Init("#version 410");
+
+        m_viewport.Init();
+        m_heiarchy.setup();
+        m_luaEngine.init();
+
+        Flux::SplashConfig splash;
+        splash.title    = "Flux Engine";
+        splash.subtitle = "Loading project...";
+        Flux::RunSplashScreen(m_window, splash);
     }
 
     Window::~Window()
@@ -103,11 +118,27 @@ namespace Flux
 
     bool Window::shouldClose() const
     {
+        if (m_window == nullptr) 
+        {
+            return true; 
+        }
         return glfwWindowShouldClose(m_window);
     }
 
-    void Window::update() // Main render
+    void Window::update() 
     {
+        if (m_window == nullptr) 
+        {
+            return; 
+        }
+
+        if (m_pendingStop) {
+            m_pendingStop = false;
+            StopRuntimeEngine();
+        }
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -174,18 +205,41 @@ namespace Flux
             m_luaEngine.step();
         }
 
-        if (m_ribbon.editorLocked) {
-            ImGui::BeginDisabled(true);
-        }
-        
-        m_viewport.RenderViewport(m_heiarchy);
-        m_explorer.renderExplorer(m_viewport);
-        m_properties.renderProperties(&m_heiarchy);
-        m_heiarchy.renderHeiarchy(m_viewport.activeProjectPath);
-        if (m_ribbon.editorLocked) {
-            ImGui::EndDisabled(); 
-        }
+
         m_ribbon.renderRibbon();
+        m_explorer.renderExplorer(m_viewport);
+
+        static std::filesystem::path lastLoadedProject;
+        if (m_explorer.activeFolderPath != lastLoadedProject && !m_explorer.activeFolderPath.empty()) {
+            lastLoadedProject = m_explorer.activeFolderPath;
+            m_ribbon.LoadProjectSettings(m_explorer.activeFolderPath);
+        }
+
+        if (!m_explorer.activeFolderPath.empty()) {
+            if (m_ribbon.editorLocked) {
+                ImGui::BeginDisabled(true);
+            }
+
+            m_viewport.RenderViewport(m_heiarchy);
+            m_properties.renderProperties(&m_heiarchy);
+            m_heiarchy.renderHeiarchy(m_viewport.activeProjectPath);
+            if (m_ribbon.editorLocked) {
+                ImGui::EndDisabled(); 
+            }
+
+            if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S) && !m_ribbon.editorLocked) {
+                std::string scenePath = m_explorer.activeFolderPath.string() + "/scene.fscn";
+                m_sceneSerializer.Save(m_heiarchy, scenePath, m_explorer.activeFolderPath);
+                Output::addLog("Scene saved to " + scenePath);
+            }
+            
+        } else {
+            ImGui::Begin("Viewport");
+            ImGui::SetWindowFontScale(2.0);
+            ImGui::Text("No project loaded. Please Open or Create a project in the Explorer.");
+            ImGui::SetWindowFontScale(1.0);
+            ImGui::End();
+        }
 
         if (m_ribbon.playToggledFrame) {
             if (m_ribbon.editorLocked) {
@@ -242,21 +296,18 @@ namespace Flux
 
         glfwPollEvents();
 
-        glfwMakeContextCurrent(NULL); 
-
         m_runtime.SyncCamera(m_viewport.camera->Position, m_viewport.camera->Position + m_viewport.camera->Front);
 
-        m_runtime.Update(); 
+        m_runtime.Update();
 
-       if (!m_runtime.isRunning && m_ribbon.editorLocked && !m_stoppingRuntime) {
-            m_stoppingRuntime = true;
-            StopRuntimeEngine();
-            m_stoppingRuntime = false;
+        if (!m_runtime.isRunning && m_ribbon.editorLocked)
+            m_pendingStop = true;
+
+        if (m_window != nullptr)
+        {
+            glfwMakeContextCurrent(m_window);
+            glfwSwapBuffers(m_window);
         }
-        
-        glfwMakeContextCurrent(m_window);
-
-        glfwSwapBuffers(m_window);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
@@ -274,9 +325,22 @@ namespace Flux
         std::string projName = m_explorer.projectRoot.name;
         if (projName == "Project" || projName.empty()) projName = "Flux Game";
 
+        auto& ps = m_ribbon.projectSettings;
+
+        if (ps.useStartupScene) {
+            std::filesystem::path scenePath = m_explorer.activeFolderPath / ps.startupScene;
+            if (std::filesystem::exists(scenePath)) {
+                m_sceneSerializer.Load(m_heiarchy, scenePath, m_explorer.activeFolderPath);
+                Output::addLog("Runtime loading startup scene: " + std::string(ps.startupScene));
+            } else {
+                Output::addLog("WARNING: Startup scene not found: " + scenePath.string() + ", using current hierarchy.");
+            }
+        }
+
         m_runtimeNodes = m_heiarchy.nodes;
-        
-        m_runtime.Start(projName, m_explorer.activeFolderPath, m_runtimeNodes);
+
+        m_runtime.Start(projName, m_explorer.activeFolderPath, m_runtimeNodes,
+                        ps.runtimeWidth, ps.runtimeHeight);
     }
 
     void Window::StopRuntimeEngine() {
