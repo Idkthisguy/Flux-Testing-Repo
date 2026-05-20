@@ -43,6 +43,7 @@ add_executable(Flux
         engine/runtime.h
         engine/runtime.cpp
         engine/mechanics/SplashScreen.h
+        engine/utils/cameraGuizmoModel.h
 )
 
 if (NOT WIN32)
@@ -52,7 +53,7 @@ if (NOT WIN32)
             "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/imgui_draw.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/imgui_widgets.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/imgui_tables.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/backends/imgui_impl_glfw.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/backends/imgui_impl_sdl3.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/backends/imgui_impl_opengl3.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/lib/imguizmo/ImGuizmo.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/lib/glad/include"
@@ -76,19 +77,18 @@ find_package(sol2 CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
 
 if (WIN32)
-    find_package(glfw3 CONFIG REQUIRED)
     find_package(imgui CONFIG REQUIRED)
     find_package(glad CONFIG REQUIRED)
     find_package(imguizmo CONFIG REQUIRED)
     find_package(Stb REQUIRED)
 else ()
-    find_package(glfw3 REQUIRED)
 endif ()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets/models" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets/splash" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/templates" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
@@ -123,7 +123,6 @@ target_link_libraries(Flux PRIVATE
 
 if (WIN32)
     target_link_libraries(Flux PRIVATE
-            glfw
             imgui::imgui
             glad::glad
             imguizmo::imguizmo
@@ -138,7 +137,6 @@ if (WIN32)
     )
 else ()
     target_link_libraries(Flux PRIVATE
-            glfw
             dl
             pthread
     )

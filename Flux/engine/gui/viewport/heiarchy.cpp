@@ -143,10 +143,10 @@ void Heiarchy::AddCamera(const std::string& name) {
     }
     if (!hasMain) n.isMainCamera = true;
 
-    std::string modelPath = PathHelper::GetAssetPath("assets/models/camera.obj");
+    /*std::string modelPath = PathHelper::GetAssetPath("assets/models/camera.obj");
     if (std::filesystem::exists(modelPath))
         n.model = GetOrLoadModel(modelPath);
-
+*/
     std::string iconPath = PathHelper::GetAssetPath("assets/icons/camera.png");
     if (std::filesystem::exists(iconPath))
         n.textureID = TextureLoader::Load(iconPath);

@@ -1,11 +1,13 @@
 #include "ribbon.h"
 #include "imgui.h"
+#include <SDL3/SDL.h>
 #include <iostream>
 
 namespace Flux
 {
 int currentTool = 0;
 bool showSettings = false;
+
 void Ribbon::renderRibbon()
 {
     ImGuiViewport *main_viewport = ImGui::GetMainViewport();
@@ -18,7 +20,7 @@ void Ribbon::renderRibbon()
                                     ImGuiWindowFlags_MenuBar;
 
     ImGui::Begin("###Ribbon", nullptr, window_flags);
-    if (ImGui::IsWindowHovered())
+    if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive())
     {
         ImGui::SetWindowFocus();
     }
@@ -84,7 +86,7 @@ void Ribbon::renderRibbon()
             if (viewportPtr)
             {
                 if (ImGui::Checkbox("VSync", &viewportPtr->vsyncEnabled))
-                    glfwSwapInterval(viewportPtr->vsyncEnabled ? 1 : 0);
+                    SDL_GL_SetSwapInterval(viewportPtr->vsyncEnabled ? 1 : 0);
                 ImGui::SliderFloat("Camera Sensitivity", &viewportPtr->camera->MouseSensitivity, 0.01f, 0.5f);
                 ImGui::SliderFloat("Camera Speed", &viewportPtr->camera->MovementSpeed, 1.0f, 50.0f);
             }
@@ -94,14 +96,14 @@ void Ribbon::renderRibbon()
             ImGui::Text("Runtime Window Resolution");
             ImGui::InputInt("Width", &projectSettings.runtimeWidth);
             ImGui::InputInt("Height", &projectSettings.runtimeHeight);
-            projectSettings.runtimeWidth = std::max(320, projectSettings.runtimeWidth);
+            projectSettings.runtimeWidth  = std::max(320, projectSettings.runtimeWidth);
             projectSettings.runtimeHeight = std::max(240, projectSettings.runtimeHeight);
 
             ImGui::Separator();
 
             ImGui::Text("Scene");
             ImGui::InputText("Startup Scene", projectSettings.startupScene, IM_ARRAYSIZE(projectSettings.startupScene));
-            ImGui::InputText("Current Scene", projectSettings.currentScene, IM_ARRAYSIZE(projectSettings.currentScene));
+            ImGui::InputText("Current Scene", projectSettings.currentScene,  IM_ARRAYSIZE(projectSettings.currentScene));
             ImGui::Checkbox("Use Startup Scene on Play", &projectSettings.useStartupScene);
             ImGui::TextDisabled(projectSettings.useStartupScene ? "Play will load: startup scene"
                                                                 : "Play will load: current scene");
@@ -116,6 +118,7 @@ void Ribbon::renderRibbon()
         }
         ImGui::End();
     }
+
     ImGui::SetCursorPosX(main_viewport->Size.x * 0.5f - 50.0f);
     drawProjectControls();
 
@@ -125,19 +128,13 @@ void Ribbon::renderRibbon()
 void Ribbon::drawTransformTools()
 {
     if (ImGui::RadioButton("Move", currentTool == TOOL_MOVE))
-    {
         currentTool = TOOL_MOVE;
-    }
     ImGui::SameLine();
     if (ImGui::RadioButton("Rotate", currentTool == TOOL_ROTATE))
-    {
         currentTool = TOOL_ROTATE;
-    }
     ImGui::SameLine();
     if (ImGui::RadioButton("Scale", currentTool == TOOL_SCALE))
-    {
         currentTool = TOOL_SCALE;
-    }
 }
 
 void Ribbon::drawFileMenu()
@@ -188,16 +185,12 @@ void Ribbon::drawEditMenu()
         if (ImGui::MenuItem("Undo"))
         {
             if (textEditorPtr)
-            {
                 textEditorPtr->Undo();
-            }
         }
         if (ImGui::MenuItem("Redo"))
         {
             if (textEditorPtr)
-            {
                 textEditorPtr->Redo();
-            }
         }
         ImGui::MenuItem("Preferences", nullptr, &showPreferences);
 
@@ -228,7 +221,6 @@ void Ribbon::drawProjectControls()
             luaEnginePtr->isRunning = false;
             editorLocked = false;
         }
-
         playToggledFrame = true;
     }
 }
@@ -240,9 +232,9 @@ void Ribbon::SavePreferences()
     fs::create_directories(dir);
     nlohmann::json j;
     j["camSpeed"] = camSpeed;
-    j["camSens"] = camSens;
-    j["vsync"] = vsync;
-    j["theme"] = theme;
+    j["camSens"]  = camSens;
+    j["vsync"]    = vsync;
+    j["theme"]    = theme;
     std::ofstream(dir / "preferences.json") << j.dump(4);
 }
 
@@ -256,9 +248,9 @@ void Ribbon::LoadPreferences()
     nlohmann::json j;
     f >> j;
     camSpeed = j.value("camSpeed", 10.0f);
-    camSens = j.value("camSens", 0.25f);
-    vsync = j.value("vsync", true);
-    theme = j.value("theme", 0);
+    camSens  = j.value("camSens",  0.25f);
+    vsync    = j.value("vsync",    true);
+    theme    = j.value("theme",    0);
 }
 
 void Ribbon::SaveProjectSettings(const std::filesystem::path &projectRoot)
@@ -268,16 +260,16 @@ void Ribbon::SaveProjectSettings(const std::filesystem::path &projectRoot)
     fs::create_directories(dir);
 
     nlohmann::json j;
-    j["startupScene"] = projectSettings.startupScene;
-    j["currentScene"] = projectSettings.currentScene;
-    j["useStartupScene"] = projectSettings.useStartupScene;
-    j["runtimeWidth"] = projectSettings.runtimeWidth;
-    j["runtimeHeight"] = projectSettings.runtimeHeight;
+    j["startupScene"]     = projectSettings.startupScene;
+    j["currentScene"]     = projectSettings.currentScene;
+    j["useStartupScene"]  = projectSettings.useStartupScene;
+    j["runtimeWidth"]     = projectSettings.runtimeWidth;
+    j["runtimeHeight"]    = projectSettings.runtimeHeight;
 
     if (viewportPtr)
     {
-        j["vsync"] = viewportPtr->vsyncEnabled;
-        j["camSens"] = viewportPtr->camera->MouseSensitivity;
+        j["vsync"]    = viewportPtr->vsyncEnabled;
+        j["camSens"]  = viewportPtr->camera->MouseSensitivity;
         j["camSpeed"] = viewportPtr->camera->MovementSpeed;
     }
 
@@ -295,19 +287,20 @@ void Ribbon::LoadProjectSettings(const std::filesystem::path &projectRoot)
     f >> j;
 
     std::string ss = j.value("startupScene", "main.fscn");
-    std::string cs = j.value("currentScene", "main.fscn");
+    std::string cs = j.value("currentScene",  "main.fscn");
     std::strncpy(projectSettings.startupScene, ss.c_str(), sizeof(projectSettings.startupScene) - 1);
     std::strncpy(projectSettings.currentScene, cs.c_str(), sizeof(projectSettings.currentScene) - 1);
     projectSettings.useStartupScene = j.value("useStartupScene", false);
-    projectSettings.runtimeWidth = j.value("runtimeWidth", 1280);
-    projectSettings.runtimeHeight = j.value("runtimeHeight", 720);
+    projectSettings.runtimeWidth    = j.value("runtimeWidth",    1280);
+    projectSettings.runtimeHeight   = j.value("runtimeHeight",   720);
 
     if (viewportPtr)
     {
-        viewportPtr->vsyncEnabled = j.value("vsync", true);
-        glfwSwapInterval(viewportPtr->vsyncEnabled ? 1 : 0);
-        viewportPtr->camera->MouseSensitivity = j.value("camSens", 0.25f);
-        viewportPtr->camera->MovementSpeed = j.value("camSpeed", 10.0f);
+        viewportPtr->vsyncEnabled             = j.value("vsync",    true);
+        SDL_GL_SetSwapInterval(viewportPtr->vsyncEnabled ? 1 : 0);
+        viewportPtr->camera->MouseSensitivity = j.value("camSens",  0.25f);
+        viewportPtr->camera->MovementSpeed    = j.value("camSpeed", 10.0f);
     }
 }
+
 } // namespace Flux

@@ -121,8 +121,6 @@ namespace Flux {
                         n.textureID = TextureLoader::Load(iconPath);
                 }
                 h.nodes.push_back(n);
-
-                    h.nodes.push_back(n);
                 }
             }
     };

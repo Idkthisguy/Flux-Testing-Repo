@@ -392,7 +392,7 @@ namespace Flux
 						SceneSerializer::Load(
 							*ribbonPtr->heiarchyPtr,
 							file.path,
-							activeFolderPath
+							projectRoot.path
 						);
 						Output::addLog("Opened scene: " + file.path.filename().string());
 					}

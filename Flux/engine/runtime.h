@@ -11,6 +11,7 @@
 #include "Textureloader.h"
 #include "gui/viewport/ribbon.h"
 
+#include "mechanics/SplashScreen.h"
 
 namespace Flux
 {
@@ -35,8 +36,8 @@ class Runtime
     Ribbon m_ribbon;
     std::vector<SceneNode> m_gameNodes;
 
-    glm::vec3 cameraPos;
-    glm::vec3 cameraTarget;
+    glm::vec3 cameraPos{0.0f, 5.0f, 15.0f};
+    glm::vec3 cameraTarget{0.0f, 0.0f, 0.0f};
 
     std::unordered_map<std::string, unsigned int> m_runtimeTextureCache;
 };
