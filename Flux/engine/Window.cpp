@@ -95,6 +95,7 @@ Window::Window(int width, int height, const std::string &title) : m_width(width)
     m_ribbon.explorerPtr = &m_explorer;
     m_ribbon.heiarchyPtr = &m_heiarchy;
     m_ribbon.viewportPtr = &m_viewport;
+    m_ribbon.windowPtr = this;
     m_ribbon.LoadPreferences();
     m_texteditor.SetLanguageDefinition(TextEditor::LanguageDefinition::Lua());
 
@@ -205,13 +206,16 @@ void Window::update()
             break;
         */
         case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-            if (event.window.windowID == editorWindowID)
+            if (m_isSceneUnsaved)
             {
-                m_shouldClose = true;
+                m_pendingAction = PendingAction::CLOSE_EDITOR;
+                showUnsavedWarningPopup = true;
             }
             else if (m_runtime.isRunning)
             {
                 m_pendingStop = true;
+            } else {
+                m_shouldClose = true;
             }
             break;
         }
@@ -252,6 +256,71 @@ void Window::update()
 
     ImGui::Begin("MainDockHost", nullptr, host_flags);
     ImGui::DockSpace(dockspace_id, ImVec2(0.f, 0.f), ImGuiDockNodeFlags_None);
+
+    if (showUnsavedWarningPopup) ImGui::OpenPopup("Unsaved Changes!");
+
+    if (ImGui::BeginPopupModal("Unsaved Changes!"), NULL, ImGuiWindowFlags_AlwaysAutoResize) {
+        ImGui::Text("You have unsaved changes! Are you sure you want to lose your work?");
+
+        if (ImGui::Button("Yes, discard work", ImVec2(150, 0))) {
+            m_isSceneUnsaved = false;
+            showUnsavedWarningPopup = false;
+            ImGui::CloseCurrentPopup();
+
+            if (m_pendingAction == PendingAction::CLOSE_EDITOR) m_shouldClose = true;
+            if (m_pendingAction == PendingAction::NEW_SCENE) showNewScenePopup = true;
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            showUnsavedWarningPopup = false;
+            m_pendingAction = PendingAction::NONE;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    if (showSaveConfirmPopup) ImGui::OpenPopup("Confirm overwrite");
+
+    if (ImGui::BeginPopupModal("Confirm overwrite", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Are you sure you want to overwrite  '%s'?", sceneToSaveName.c_str());
+
+        if (ImGui::Button("Yes overwrite", ImVec2(120, 0))) {
+            m_isSceneUnsaved = false;
+            showSaveConfirmPopup = false;
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            showSaveConfirmPopup = false;
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+
+    if (showNewScenePopup) ImGui::OpenPopup("Name Your Scene");
+
+    if (ImGui::BeginPopupModal("Name Your Scene", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+        static char newSceneName[128] = "MyNewScene"; 
+        ImGui::InputText("Scene Name", newSceneName, IM_ARRAYSIZE(newSceneName));
+
+        if (ImGui::Button("Create", ImVec2(120, 0))) {
+            showNewScenePopup = false;
+            ImGui::CloseCurrentPopup();
+        }
+        
+        ImGui::SameLine();
+        
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            showNewScenePopup = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
 
     if (firstTime)
     {

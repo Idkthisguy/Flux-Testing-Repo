@@ -148,9 +148,12 @@ void Ribbon::drawFileMenu()
 
         if (ImGui::MenuItem("New Scene"))
         {
-            heiarchyPtr->nodes.clear();
-            heiarchyPtr->setup();
-            Output::addLog("Created new empty scene.");
+            if (windowPtr->m_isSceneUnsaved) {
+                windowPtr->m_pendingAction = Window::PendingAction::NEW_SCENE;
+                windowPtr->showUnsavedWarningPopup = true;
+            } else {
+                windowPtr->showNewScenePopup = true;
+            }
         }
 
         if (ImGui::MenuItem("Save Scene (Ctrl+S)"))

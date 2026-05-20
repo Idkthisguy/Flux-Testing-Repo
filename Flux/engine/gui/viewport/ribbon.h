@@ -10,6 +10,8 @@
 #include "mechanics/SceneSerializer.h"
 
 #include "viewport.h"
+#include "Window.h"
+
 class TextEditor;	
 class SceneSerializer;
 
@@ -34,6 +36,8 @@ namespace Flux {
 
 	class Viewport;
 
+	class Window;
+
 	class Ribbon {
 		public:
 			void renderRibbon();
@@ -46,6 +50,7 @@ namespace Flux {
 			Explorer* explorerPtr = nullptr;
 			Heiarchy* heiarchyPtr = nullptr;
 			Viewport* viewportPtr = nullptr;
+			Window* windowPtr = nullptr;
 			ProjectSettings projectSettings;
 
 			bool showPreferences = false;

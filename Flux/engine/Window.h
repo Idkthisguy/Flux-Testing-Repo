@@ -41,6 +41,17 @@ namespace Flux {
         bool m_pendingStop = false;
 		bool m_pendingStart = false;
 
+        bool m_isSceneUnsaved = false;
+
+        bool showSaveConfirmPopup = false;
+        bool showUnsavedWarningPopup = false;
+        bool showNewScenePopup = false;
+
+        std::string sceneToSaveName = "";
+
+        enum class PendingAction { NONE, CLOSE_EDITOR, LOAD_SCENE, NEW_SCENE };
+        PendingAction m_pendingAction = PendingAction::NONE;
+
     private:
         std::vector<SceneNode> m_runtimeNodes;
 
