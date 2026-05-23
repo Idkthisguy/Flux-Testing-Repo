@@ -115,7 +115,7 @@ static void TextureSlot(const char* label, SceneNode& node) {
             std::string ext = std::filesystem::path(droppedPath).extension().string();
             if (ext==".png"||ext==".jpg"||ext==".jpeg"||ext==".bmp"||ext==".tga") {
                 node.texturePath = droppedPath;
-                node.textureID   = TextureLoader::Load(droppedPath);
+                node.textureID = TextureLoader::Load(droppedPath);
                 if (node.model) node.model->SetTexture(node.textureID);
             }
         }
@@ -263,6 +263,17 @@ void Properties::renderProperties(Heiarchy* h) {
         TextureSlot("Albedo", node);
 
         ImGui::Separator();
+        ImGui::Text("Physics");
+        ImGui::Spacing();
+
+        BeginTable2Col();
+
+        DragVec3Row("Velocity", node.velocity, 0.1f);
+
+        ImGui::Checkbox("Anchored", &node.isAnchored);
+
+        ImGui::EndTable();
+        ImGui::Separator();
         ImGui::Text("Material");
         ImGui::Spacing();
         BeginTable2Col();
@@ -282,6 +293,7 @@ void Properties::renderProperties(Heiarchy* h) {
         BeginTable2Col();
         ColorRow("Color",     node.light.color);
         FloatRow("Intensity", node.light.intensity, 0.01f, 0.f, 100.f);
+
 
         if (node.type == NodeType::DirectionalLight) {
             if (DragVec3Row("Direction", node.light.direction, 0.01f)) {

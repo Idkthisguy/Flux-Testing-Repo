@@ -44,6 +44,7 @@ add_executable(Flux
         engine/runtime.cpp
         engine/mechanics/SplashScreen.h
         engine/utils/cameraGuizmoModel.h
+        engine/physics/gravity/gravity.h
 )
 
 if (NOT WIN32)

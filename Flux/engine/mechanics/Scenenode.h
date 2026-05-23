@@ -81,6 +81,9 @@ namespace Flux {
             ImGuizmo::RecomposeMatrixFromComponents(t, r, s, m);
             return glm::make_mat4(m);
         }
+
+        glm::vec3 velocity = glm::vec3(0.0f);
+        bool isAnchored = false;
     };
 
 }

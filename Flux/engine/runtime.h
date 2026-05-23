@@ -39,6 +39,8 @@ class Runtime
     glm::vec3 cameraPos{0.0f, 5.0f, 15.0f};
     glm::vec3 cameraTarget{0.0f, 0.0f, 0.0f};
 
-    std::unordered_map<std::string, unsigned int> m_runtimeTextureCache;
+    std::unordered_map<std::string, unsigned int> m_runtimeTextureCache;\
+
+    uint64_t lastTimeFrame = 0;
 };
 } // namespace Flux

@@ -2,6 +2,8 @@
 #include <glad/glad.h>
 #include <iostream>
 
+#include "physics/gravity/gravity.h"
+
 namespace Flux
 {
 
@@ -11,6 +13,7 @@ void Runtime::Start(const std::string &projectName, const std::filesystem::path 
     if (isRunning)
         Stop();
 
+    lastTimeFrame = SDL_GetPerformanceCounter();
     isRunning = true;
 
     if (!std::filesystem::exists(projectPath) || !std::filesystem::is_directory(projectPath))
@@ -129,6 +132,30 @@ void Runtime::Update()
         return;
 
     m_luaEngine.step();
+
+    uint64_t currentTime = SDL_GetPerformanceCounter();
+    uint64_t timeDiff = currentTime - lastTimeFrame;
+
+    float dt = (float)timeDiff / (float)SDL_GetPerformanceFrequency();
+    lastTimeFrame = currentTime;
+
+    if (dt > 0.1f) {
+        dt = 0.1f;
+    }
+
+    for (auto &node : m_gameNodes)
+    {
+        if (node.type == NodeType::Mesh && !node.isAnchored)
+        {
+            node.velocity = Gravity::CalculateVelocity(node.velocity, dt);
+
+            node.position += node.velocity * dt;
+        }
+        else if (node.isAnchored)
+        {
+            node.velocity = glm::vec3(0.0f);
+        }
+    }
 
     int w, h;
     SDL_GetWindowSize(m_window, &w, &h);

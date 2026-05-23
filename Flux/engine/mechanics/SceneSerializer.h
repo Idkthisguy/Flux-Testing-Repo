@@ -44,6 +44,9 @@ namespace Flux {
 
                     if (node.type == NodeType::Camera) n["fov"] = node.fov;
 
+                    n["velocity"] = {node.velocity.x, node.velocity.y, node.velocity.z};
+                    n["isAnchored"] = node.isAnchored;
+
                     j["nodes"].push_back(n);
                 }
                 std::ofstream file(filePath);
@@ -119,6 +122,12 @@ namespace Flux {
                     std::string iconPath = PathHelper::GetAssetPath("assets/icons/camera.png");
                     if (std::filesystem::exists(iconPath))
                         n.textureID = TextureLoader::Load(iconPath);
+
+                    n.isAnchored = jNode.value("isAnchored", false);
+                    if (jNode.contains("velocity")) {
+                        auto v = jNode["velocity"];
+                        n.velocity = glm::vec3(v[0], v[1], v[2]);
+                    }
                 }
                 h.nodes.push_back(n);
                 }
