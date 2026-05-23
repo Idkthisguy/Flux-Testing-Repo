@@ -17,7 +17,8 @@ namespace Flux {
         DirectionalLight,
         PointLight,
         SpotLight,
-        SurfaceLight
+        SurfaceLight,
+        Camera
     };
 
     struct LightData {
@@ -67,7 +68,10 @@ namespace Flux {
         LightData light;
 
         bool isLightingNode = false;
+        bool isMainCamera = false;
         bool isLocked = false;
+
+        float fov = 70.0f;
 
         glm::mat4 GetTransformMatrix() const {
             float m[16];
@@ -77,6 +81,9 @@ namespace Flux {
             ImGuizmo::RecomposeMatrixFromComponents(t, r, s, m);
             return glm::make_mat4(m);
         }
+
+        glm::vec3 velocity = glm::vec3(0.0f);
+        bool isAnchored = false;
     };
 
 }

@@ -4,6 +4,8 @@
 #include <vector>
 #include "Model.h"
 #include "./mechanics/Scenenode.h"
+#include <SDL3/SDL.h>
+#include "gui/viewport/output.h"
 
 namespace Flux {
 
@@ -36,7 +38,7 @@ namespace Flux {
                         float timeOfDay      = 14.0f,
                         bool  hasLightingNode = true);
 
-        bool isSelected;
+        bool isSelected = false;
 
     private:
         unsigned int shaderProgram    = 0;
