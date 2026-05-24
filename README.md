@@ -33,11 +33,11 @@ Flux gonna be cross platform on release (Except for macOS which is still in deve
 
 ## Sneak peeks
 
-![Screenshot](cool/FluxScreenshot.png)
 *The first screenshot of the engine showing the 3D grid and viewport.*
+![Screenshot](cool/FluxScreenshot.png)
 
+*A screenshot for the lighting in Flux (as of May 2. 2026)*
 ![Screenshot](cool/LightingSnapshotRestoring.png)
-*A screenshot for the lighting in Flux (as of May 2. 2026)
 
 ## Dependencies
 Flux was built with a lot of libraries. and without these libraries, I would've just gave up.
