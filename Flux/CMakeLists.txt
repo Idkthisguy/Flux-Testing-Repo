@@ -44,7 +44,7 @@ add_executable(Flux
         engine/runtime.cpp
         engine/mechanics/SplashScreen.h
         engine/utils/cameraGuizmoModel.h
-        engine/physics/gravity/gravity.h
+        engine/physics/PhysicsLayer.h
 )
 
 if (NOT WIN32)
@@ -76,6 +76,8 @@ find_package(glm CONFIG REQUIRED)
 find_package(assimp REQUIRED)
 find_package(sol2 CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
+
+find_package(Jolt CONFIG REQUIRED)
 
 if (WIN32)
     find_package(imgui CONFIG REQUIRED)
@@ -119,6 +121,7 @@ target_link_libraries(Flux PRIVATE
         assimp::assimp
         sol2::sol2
         SDL3::SDL3
+        Jolt::Jolt
         ${OPENGL_LIBRARIES}
 )
 

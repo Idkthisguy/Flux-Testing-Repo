@@ -114,6 +114,12 @@ namespace Flux {
                     if (!jNode.contains("roughness")) n.roughness = 0.7f;
                     if (!jNode.contains("metallic"))  n.metallic  = 0.0f;
 
+                    n.isAnchored = jNode.value("isAnchored", false);
+                    if (jNode.contains("velocity")) {
+                        auto v = jNode["velocity"];
+                        n.velocity = glm::vec3(v[0], v[1], v[2]);
+                    }
+
                     if (n.type == NodeType::Camera) {
                     std::string modelPath = PathHelper::GetAssetPath("assets/models/camera.obj");
                     if (std::filesystem::exists(modelPath))
@@ -122,12 +128,6 @@ namespace Flux {
                     std::string iconPath = PathHelper::GetAssetPath("assets/icons/camera.png");
                     if (std::filesystem::exists(iconPath))
                         n.textureID = TextureLoader::Load(iconPath);
-
-                    n.isAnchored = jNode.value("isAnchored", false);
-                    if (jNode.contains("velocity")) {
-                        auto v = jNode["velocity"];
-                        n.velocity = glm::vec3(v[0], v[1], v[2]);
-                    }
                 }
                 h.nodes.push_back(n);
                 }

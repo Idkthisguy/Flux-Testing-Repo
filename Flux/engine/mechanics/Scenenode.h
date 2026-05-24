@@ -8,6 +8,9 @@
 #include "imgui.h"
 #include "ImGuizmo.h"
 
+#include <Jolt/Jolt.h>
+#include <Jolt/Physics/Body/Body.h>
+
 namespace Flux {
 
     class Model;
@@ -84,6 +87,8 @@ namespace Flux {
 
         glm::vec3 velocity = glm::vec3(0.0f);
         bool isAnchored = false;
+
+        JPH::BodyID physicsBodyID;
     };
 
 }

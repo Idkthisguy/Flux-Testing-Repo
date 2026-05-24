@@ -13,6 +13,13 @@
 
 #include "mechanics/SplashScreen.h"
 
+#include "physics/PhysicsLayer.h"
+
+#include <Jolt/Jolt.h>
+#include <Jolt/Physics/PhysicsSystem.h>
+#include <Jolt/Core/TempAllocator.h>
+#include <Jolt/Core/JobSystemThreadPool.h>
+
 namespace Flux
 {
 class Runtime
@@ -42,5 +49,14 @@ class Runtime
     std::unordered_map<std::string, unsigned int> m_runtimeTextureCache;\
 
     uint64_t lastTimeFrame = 0;
+
+    Flux::BroadPhaseLayerInterfaceImpl m_broadPhaseLayerInterface;
+    Flux::ObjectLayerPairFilterImpl m_objectLayerPairFilter;
+    Flux::ObjectVsBroadPhaseLayerFilterImpl m_objectVsBroadPhaseLayerFilter;
+
+    JPH::PhysicsSystem* m_PhysicsSystem = nullptr;
+
+    JPH::TempAllocatorImpl* m_tempAllocator = nullptr;
+    JPH::JobSystemThreadPool* m_jobSystem = nullptr;
 };
 } // namespace Flux
