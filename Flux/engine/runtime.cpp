@@ -2,7 +2,10 @@
 #include <glad/glad.h>
 #include <iostream>
 
-#include "physics/gravity/gravity.h"
+#include <Jolt/RegisterTypes.h>
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Math/Vec3.h>
 
 namespace Flux
 {
@@ -13,7 +16,6 @@ void Runtime::Start(const std::string &projectName, const std::filesystem::path 
     if (isRunning)
         Stop();
 
-    lastTimeFrame = SDL_GetPerformanceCounter();
     isRunning = true;
 
     if (!std::filesystem::exists(projectPath) || !std::filesystem::is_directory(projectPath))
@@ -109,6 +111,57 @@ void Runtime::Start(const std::string &projectName, const std::filesystem::path 
     m_luaEngine.isRunning = true;
     m_luaEngine.runAllScriptsInFolder(projectPath.string());
 
+    static bool joltInitialized = false;
+
+    if (!joltInitialized) {
+        JPH::RegisterDefaultAllocator();
+        JPH::Factory::sInstance = new JPH::Factory();
+        JPH::RegisterTypes();
+        joltInitialized = true;
+    }
+    m_tempAllocator = new JPH::TempAllocatorImpl(10 * 1024 * 1024);
+    m_jobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() -1);
+
+    m_PhysicsSystem = new JPH::PhysicsSystem();
+
+    JPH::PhysicsSettings settings;
+
+    m_PhysicsSystem->SetGravity(JPH::Vec3(0.0f, -4.0f,  0.0f));
+
+    m_PhysicsSystem->Init(1024, 
+        0, 
+        1024, 
+        1024, 
+        m_broadPhaseLayerInterface, 
+        m_objectVsBroadPhaseLayerFilter, 
+        m_objectLayerPairFilter
+    );
+
+    JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
+    for (auto &node : m_gameNodes) {
+        if (node.type == NodeType::Mesh) {
+            JPH::BoxShapeSettings shapeSettings(JPH::Vec3(node.scale.x, node.scale.y, node.scale.z));
+            JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
+            JPH::ShapeRefC shape = shapeResult.Get();
+
+            JPH::EMotionType motionType = node.isAnchored ? JPH::EMotionType::Static : JPH::EMotionType::Dynamic;
+            JPH::ObjectLayer layer = node.isAnchored ? Flux::Layers::NON_MOVING : Flux::Layers::MOVING;
+
+            JPH::BodyCreationSettings settings(
+                shape,
+                JPH::Vec3(node.position.x, node.position.y, node.position.z),
+                JPH::Quat::sIdentity(),
+                motionType,
+                layer
+            );
+
+            JPH::Body* body = bodyInterface.CreateBody(settings);
+            bodyInterface.AddBody(body->GetID(), JPH::EActivation::Activate);
+
+            node.physicsBodyID = body->GetID();
+        }
+    }
+
     Output::addLog("Runtime started successfully.");
 
     if (m_window && m_glContext)
@@ -133,30 +186,6 @@ void Runtime::Update()
 
     m_luaEngine.step();
 
-    uint64_t currentTime = SDL_GetPerformanceCounter();
-    uint64_t timeDiff = currentTime - lastTimeFrame;
-
-    float dt = (float)timeDiff / (float)SDL_GetPerformanceFrequency();
-    lastTimeFrame = currentTime;
-
-    if (dt > 0.1f) {
-        dt = 0.1f;
-    }
-
-    for (auto &node : m_gameNodes)
-    {
-        if (node.type == NodeType::Mesh && !node.isAnchored)
-        {
-            node.velocity = Gravity::CalculateVelocity(node.velocity, dt);
-
-            node.position += node.velocity * dt;
-        }
-        else if (node.isAnchored)
-        {
-            node.velocity = glm::vec3(0.0f);
-        }
-    }
-
     int w, h;
     SDL_GetWindowSize(m_window, &w, &h);
 
@@ -172,8 +201,25 @@ void Runtime::Update()
     glm::mat4 proj = glm::perspective(glm::radians(70.0f), (float)w / (float)h, 0.1f, 2000.0f);
     glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, glm::vec3(0, 1, 0));
 
+    uint64_t semiCurrentTIme = SDL_GetPerformanceCounter();
+    float dt = (float)(semiCurrentTIme - lastTimeFrame) / (float)SDL_GetPerformanceFrequency();
+
+    if (dt > 0.1f) dt = 0.1f;
+
+    m_PhysicsSystem->Update(dt, 1, m_tempAllocator, m_jobSystem);
+
+    JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
     for (auto &node : m_gameNodes)
     {
+        if (node.type == NodeType::Mesh && !node.isAnchored) {
+            JPH::Vec3 pos = bodyInterface.GetPosition(node.physicsBodyID);
+            node.position = glm::vec3(pos.GetX(), pos.GetY(), pos.GetZ());
+
+            JPH::Quat rot = bodyInterface.GetRotation(node.physicsBodyID);
+            glm::vec3 euler = glm::eulerAngles(glm::quat(rot.GetW(), rot.GetX(), rot.GetY(), rot.GetZ()));
+            node.rotation = glm::degrees(euler);
+        }
+
         if (node.type == NodeType::Camera && node.isMainCamera)
         {
             glm::mat4 transform = node.GetTransformMatrix();
@@ -216,6 +262,25 @@ void Runtime::Stop()
         return;
 
     Output::addLog("Stopping runtime...");
+
+    if (m_tempAllocator != nullptr && m_PhysicsSystem != nullptr) {
+        JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
+        for (auto &node : m_gameNodes) {
+            if (node.type == NodeType::Mesh) {
+                bodyInterface.RemoveBody(node.physicsBodyID);
+                bodyInterface.DestroyBody(node.physicsBodyID);
+            }
+        }
+
+        delete m_PhysicsSystem;
+        m_PhysicsSystem = nullptr;
+
+        delete m_jobSystem;
+        m_jobSystem = nullptr;
+
+        delete m_tempAllocator;
+        m_tempAllocator = nullptr;
+    }
 
     m_luaEngine.stop();
     m_luaEngine.isRunning = false;

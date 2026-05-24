@@ -6,8 +6,7 @@ Flux is a versatile, high-performance game engine for 3D (and soon 2D).
 ## Planned
 
 - 2D support
-- Scripting support (Lua and C/C++)
-- More graphics APIs (Vulkan, DirectX, SDL, and etc.)
+- More graphics APIs (Vulkan, DirectX, and etc.)
 - More platforms (Linux and MacOS)
 - More features (physics, audio, animation, and etc.)
 
@@ -16,9 +15,11 @@ Flux is a versatile, high-performance game engine for 3D (and soon 2D).
 The engine is currently in early development and is not yet ready for production use. However, the core architecture is in place, and the following features are currently implemented:
 - 3D rendering (OpenGL 4.1+)
 - Viewport camera movement
-- Basic scene management
+- Basic scene management w/ saving system and settings for projects
 - Model transformation (translation, rotation, and scaling)
 - "Decent" lighting
+- Early physics implementation
+- Lua scripting
 
 ## Getting started
 Flux gonna be cross platform on release (Except for macOS which is still in development)
@@ -35,24 +36,30 @@ Flux gonna be cross platform on release (Except for macOS which is still in deve
 ![Screenshot](cool/FluxScreenshot.png)
 *The first screenshot of the engine showing the 3D grid and viewport.*
 
-![Screenshot](cool/LightingSnapshot.png)
+![Screenshot](cool/LightingSnapshotRestoring.png)
 *A screenshot for the lighting in Flux (as of May 2. 2026)
 
 ## Dependencies
-Flux is built on the shoulders of giants. We use modern 2026 techniques and these industry-standard libraries:
+Flux was built with a lot of libraries. and without these libraries, I would've just gave up.
 
-- [Dear ImGui](https://github.com/ocornut/imgui) - Bloat-free Graphical User Interface
-- [GLFW](https://www.glfw.org/) - Windowing and Input handling
+Thanks to these libraries that got me this far:
+
+- [Dear ImGui](https://github.com/ocornut/imgui) - For the editor UI
+- [SDL3](https://www.glfw.org/) - One of the main backends
 - [GLAD](https://glad.dav1d.de/) - OpenGL Multi-Language Loader
-- [GLM](https://glm.g-truc.net/0.9.9/index.html) - OpenGL Mathematics
+- [GLM](https://glm.g-truc.net/0.9.9/index.html) - For the math that I ABSOLUTELY suck at
 - [Assimp](https://www.assimp.org/) - Open Asset Import Library (3D Models)
 - [stb_image](https://github.com/nothings/stb) - Single-file image loading
 - [ImGuizmo](https://github.com/cedricguillemet/imguizmo) - Manipulate objects directly in the viewport
-- [LinuxDeploy](https://github.com/linuxdeploy/linuxdeploy) - Used to make AppImages for Linux
+- [LinuxDeploy](https://github.com/linuxdeploy/linuxdeploy) - Used to make and distribute AppImages for Linux
 - [ImGuiColorTextEdit](https://github.com/BalazsJako/ImGuiColorTextEdit) - Credits to BalazsJako for making this, ImGuiColorTextEdit is now the foundation of the text editor and has solved one of my biggest problems making this project.
+- [LuaJIT](https://luajit.org/) - For running the Lua scripts
+- [sol2](https://github.com/ThePhd/sol2) - For making the API and wraps for Lua
+- [nlohmann-json](https://github.com/nlohmann/json) - For JSON handling and persistent saving
+- [Jolt Physics](https://github.com/jrouwe/joltphysics) - For physics and collisions
 
 ## Top Contributors
 
-Small party, I know ;-;
+Small party, I know ;-; (literally just me)
 
 - [@Idkthisguy](https://github.com/Idkthisguy) - Creator and lead developer
