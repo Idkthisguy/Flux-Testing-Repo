@@ -6,6 +6,7 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Math/Vec3.h>
+#include <Jolt/Math/Quat.h>
 
 namespace Flux
 {
@@ -17,6 +18,8 @@ void Runtime::Start(const std::string &projectName, const std::filesystem::path 
         Stop();
 
     isRunning = true;
+
+    lastTimeFrame = SDL_GetPerformanceCounter();
 
     if (!std::filesystem::exists(projectPath) || !std::filesystem::is_directory(projectPath))
     {
@@ -142,15 +145,27 @@ void Runtime::Start(const std::string &projectName, const std::filesystem::path 
         if (node.type == NodeType::Mesh) {
             JPH::BoxShapeSettings shapeSettings(JPH::Vec3(node.scale.x, node.scale.y, node.scale.z));
             JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
-            JPH::ShapeRefC shape = shapeResult.Get();
 
+            if (shapeResult.HasError()) {
+                Output::addLog("Jolt shape Creation Error: " + std::string(shapeResult.GetError().c_str()));
+                std::cerr << "JOLT SHAPE CREATION ERROR!!: " + std::string(shapeResult.GetError().c_str());
+                continue;
+            }
+
+            JPH::ShapeRefC shape = shapeResult.Get();
+            
             JPH::EMotionType motionType = node.isAnchored ? JPH::EMotionType::Static : JPH::EMotionType::Dynamic;
-            JPH::ObjectLayer layer = node.isAnchored ? Flux::Layers::NON_MOVING : Flux::Layers::MOVING;
+            JPH::ObjectLayer    layer = node.isAnchored ? Flux::Layers::NON_MOVING : Flux::Layers::MOVING;
+
+            auto rot = glm::radians(node.rotation);
+            JPH::Quat joltRotation = JPH::Quat::sEulerAngles(
+                JPH::Vec3(rot.x, rot.y, rot.z)
+            );
 
             JPH::BodyCreationSettings settings(
                 shape,
                 JPH::Vec3(node.position.x, node.position.y, node.position.z),
-                JPH::Quat::sIdentity(),
+                joltRotation,
                 motionType,
                 layer
             );
@@ -204,7 +219,7 @@ void Runtime::Update()
     uint64_t semiCurrentTIme = SDL_GetPerformanceCounter();
     float dt = (float)(semiCurrentTIme - lastTimeFrame) / (float)SDL_GetPerformanceFrequency();
 
-    if (dt > 0.1f) dt = 0.1f;
+    if (dt > 0.33f) dt = 0.33f;
 
     m_PhysicsSystem->Update(dt, 1, m_tempAllocator, m_jobSystem);
 
@@ -213,11 +228,15 @@ void Runtime::Update()
     {
         if (node.type == NodeType::Mesh && !node.isAnchored) {
             JPH::Vec3 pos = bodyInterface.GetPosition(node.physicsBodyID);
-            node.position = glm::vec3(pos.GetX(), pos.GetY(), pos.GetZ());
-
             JPH::Quat rot = bodyInterface.GetRotation(node.physicsBodyID);
-            glm::vec3 euler = glm::eulerAngles(glm::quat(rot.GetW(), rot.GetX(), rot.GetY(), rot.GetZ()));
-            node.rotation = glm::degrees(euler);
+
+            glm::quat glmRot(rot.GetW(), rot.GetX(), rot.GetY(), rot.GetZ());
+            glm::mat4 rotMat = glm::mat4_cast(glmRot);
+            glm::mat4 transMat = glm::translate(glm::mat4(1.0f), glm::vec3(pos.GetX(), pos.GetY(), pos.GetZ()));
+            glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), node.scale);
+
+            node.physicsWorldMatrix = transMat * rotMat * scaleMat;
+            node.position = glm::vec3(pos.GetX(), pos.GetY(), pos.GetZ());
         }
 
         if (node.type == NodeType::Camera && node.isMainCamera)
@@ -254,6 +273,8 @@ void Runtime::Update()
 
     if (m_window && m_glContext)
         SDL_GL_MakeCurrent(m_window, nullptr);
+
+    lastTimeFrame = semiCurrentTIme;
 }
 
 void Runtime::Stop()

@@ -20,17 +20,13 @@ namespace Flux {
     }
 
     class ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter {
-        public:
-            virtual bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override {
-                switch (inObject1) {
-                    case Layers::NON_MOVING:
-                        return inObject2 == Layers::MOVING;
-                    case Layers::MOVING:
-                        return true;
-                    default:
-                        return false;
-                }
+    public:
+        virtual bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override {
+            if (inObject1 == Layers::MOVING || inObject2 == Layers::MOVING) {
+                return true;
             }
+            return false;
+        }
     };
 
     class BroadPhaseLayerInterfaceImpl : public JPH::BroadPhaseLayerInterface {
@@ -65,14 +61,12 @@ namespace Flux {
     class ObjectVsBroadPhaseLayerFilterImpl : public JPH::ObjectVsBroadPhaseLayerFilter {
         public:
             virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override {
-                switch (inLayer1) {
-                    case Layers::NON_MOVING:
-                        return inLayer2 == BroadPhaseLayers::MOVING;
-                    case Layers::MOVING:
-                        return true;
-                    default:
-                        return false;
+                JPH::ObjectLayer layer2AsObject = (JPH::ObjectLayer)inLayer2.GetValue();
+
+                if (inLayer1 == Layers::MOVING || layer2AsObject == Layers::MOVING) {
+                    return true;
                 }
+                return false;
             }
     };
-}
+    }

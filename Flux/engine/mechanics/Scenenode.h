@@ -89,6 +89,7 @@ namespace Flux {
         bool isAnchored = false;
 
         JPH::BodyID physicsBodyID;
+        glm::mat4 physicsWorldMatrix = glm::mat4(1.0f);
     };
 
 }
