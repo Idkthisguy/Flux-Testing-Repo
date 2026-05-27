@@ -45,6 +45,7 @@ add_executable(Flux
         engine/mechanics/SplashScreen.h
         engine/utils/cameraGuizmoModel.h
         engine/physics/PhysicsLayer.h
+        resource.rc
 )
 
 if (NOT WIN32)

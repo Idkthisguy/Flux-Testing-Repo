@@ -46,8 +46,7 @@ inline void RunSplashScreen(SDL_Window *window, const SplashConfig &cfg = {})
         }
     }
 
-    const char *vertSrc = R"(
-        #version 330 core
+    const char *vertSrc = R"(#version 330 core
         layout(location = 0) in vec2 aPos;
         layout(location = 1) in vec2 aUV;
         out vec2 vUV;
@@ -57,8 +56,7 @@ inline void RunSplashScreen(SDL_Window *window, const SplashConfig &cfg = {})
         }
     )";
 
-    const char *fragSrc = R"(
-        #version 330 core
+    const char *fragSrc = R"(#version 330 core
         in vec2 vUV;
         out vec4 FragColor;
         uniform sampler2D uTex;
@@ -143,6 +141,7 @@ inline void RunSplashScreen(SDL_Window *window, const SplashConfig &cfg = {})
         glDisable(GL_DEPTH_TEST);
 
         glUseProgram(prog);
+        glUniform1i(glGetUniformLocation(prog, "uTex"), 0);
         glUniform1f(alphaLoc, alpha);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textureID);

@@ -7,6 +7,9 @@
 #include "imgui_internal.h"
 #include <SDL3/SDL.h>
 
+#include <ShObjIdl.h>
+#include <propkey.h>
+
 namespace Flux
 {
 Window::Window(int width, int height, const std::string &title) : m_width(width), m_height(height), m_title(title)
@@ -23,6 +26,7 @@ Window::Window(int width, int height, const std::string &title) : m_width(width)
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    
 
     m_window = SDL_CreateWindow(m_title.c_str(), m_width, m_height,
                                 SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
@@ -57,8 +61,6 @@ Window::Window(int width, int height, const std::string &title) : m_width(width)
         std::cerr << "ERROR: FAILED TO INITIALIZE GLAD" << std::endl;
     }
 
-    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
-
     {
         int iconW, iconH, iconCh;
         unsigned char *pixels = stbi_load("assets/icon.png", &iconW, &iconH, &iconCh, 4);
@@ -75,14 +77,42 @@ Window::Window(int width, int height, const std::string &title) : m_width(width)
     }
 
 #if defined(_WIN32)
-
     {
+        SetCurrentProcessExplicitAppUserModelID(L"IdkthisguysStuff.FluxEngine.Core");
+
         SDL_PropertiesID props = SDL_GetWindowProperties(m_window);
         HWND hwnd = (HWND)SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
         if (hwnd)
         {
             BOOL useDarkMode = TRUE;
             DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
+            
+            IPropertyStore* pPropStore = nullptr;
+            if (SUCCEEDED(SHGetPropertyStoreForWindow(hwnd, IID_PPV_ARGS(&pPropStore)))) {
+                PROPVARIANT propvar;
+                PropVariantInit(&propvar);
+                propvar.vt = VT_LPWSTR;
+                propvar.pwszVal = const_cast<wchar_t*>(L"ZeroPointStudio.FluxEngine.Core");
+                
+                pPropStore->SetValue(PKEY_AppUserModel_ID, propvar);
+                pPropStore->Commit();
+                pPropStore->Release();
+            }
+        }
+
+        HWND consoleHwnd = GetConsoleWindow();
+        if (consoleHwnd) {
+            IPropertyStore* pConsoleStore = nullptr;
+            if (SUCCEEDED(SHGetPropertyStoreForWindow(consoleHwnd, IID_PPV_ARGS(&pConsoleStore)))) {
+                PROPVARIANT propvar;
+                PropVariantInit(&propvar);
+                propvar.vt = VT_LPWSTR;
+                propvar.pwszVal = const_cast<wchar_t*>(L"IdkthisguysStuff.FluxEngine.Core");
+                
+                pConsoleStore->SetValue(PKEY_AppUserModel_ID, propvar);
+                pConsoleStore->Commit();
+                pConsoleStore->Release();
+            }
         }
     }
 #endif
@@ -261,18 +291,19 @@ void Window::update()
         ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
         ImGui::DockBuilderSetNodeSize(dockspace_id, dockSize);
 
-        ImGuiID dock_id_left, dock_id_right, dock_id_bottom, dock_id_bottomRight, dock_id_center = dockspace_id;
+        ImGuiID dock_id_left, dock_id_right, dock_id_bottom, dock_id_bottomRight, dock_id_bottomLeft, dock_id_center = dockspace_id;
 
-        dock_id_left = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Left, 0.20f, nullptr, &dock_id_center);
         dock_id_bottom = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Down, 0.25f, nullptr, &dock_id_center);
+        dock_id_left = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Left, 0.20f, nullptr, &dock_id_center);
         dock_id_right = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.30f, nullptr, &dock_id_center);
         dock_id_bottomRight = ImGui::DockBuilderSplitNode(dock_id_right, ImGuiDir_Down, 0.5f, nullptr, &dock_id_right);
+        dock_id_bottomLeft = ImGui::DockBuilderSplitNode(dock_id_left, ImGuiDir_Down, 0.5f, nullptr, &dock_id_left);
 
         ImGui::DockBuilderDockWindow("Viewport", dock_id_center);
         ImGui::DockBuilderDockWindow("###UniqueEditorID", dock_id_center);
         ImGui::DockBuilderDockWindow("Explorer", dock_id_right);
         ImGui::DockBuilderDockWindow("Output", dock_id_bottom);
-        ImGui::DockBuilderDockWindow("Properties", dock_id_bottomRight);
+        ImGui::DockBuilderDockWindow("Properties", dock_id_bottomLeft);
         ImGui::DockBuilderDockWindow("Heiarchy", dock_id_left);
         ImGui::DockBuilderFinish(dockspace_id);
     }
