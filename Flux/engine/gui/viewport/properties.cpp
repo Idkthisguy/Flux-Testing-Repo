@@ -10,11 +10,13 @@
 #include <glm/gtx/quaternion.hpp>
 
 namespace Flux {
-static void BeginTable2Col() {
-    ImGui::BeginTable("##t", 2,
-        ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings);
-    ImGui::TableSetupColumn("L", ImGuiTableColumnFlags_WidthFixed,   100.f);
-    ImGui::TableSetupColumn("V", ImGuiTableColumnFlags_WidthStretch);
+static bool BeginTable2Col(const char* id = "##t") {
+    if (ImGui::BeginTable(id, 2, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings)) {
+        ImGui::TableSetupColumn("L", ImGuiTableColumnFlags_WidthFixed, 100.f);
+        ImGui::TableSetupColumn("V", ImGuiTableColumnFlags_WidthStretch);
+        return true;
+    }
+    return false;
 }
 
 static bool DragVec3Row(const char* label, glm::vec3& v, float speed = 0.1f) {
@@ -167,15 +169,14 @@ void Properties::renderProperties(Heiarchy* h) {
         ImGui::Text("Lighting Properties");
         ImGui::Spacing();
 
-        BeginTable2Col();
-
+        if (BeginTable2Col("##t_lighting"))
         {
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted("Time of Day");
             ImGui::TableSetColumnIndex(1); ImGui::SetNextItemWidth(-1);
             int   h24   = (int)node.light.timeOfDay;
             int   m60   = (int)((node.light.timeOfDay - h24) * 60.f);
-            char  disp[16]; snprintf(disp, sizeof(disp), "%02d:%02d", h24, m60);
+            char  disp[16]; snprintf(disp,  sizeof(disp), "%02d:%02d", h24, m60);
             ImGui::PushID("tod");
            if (ImGui::DragFloat("##tod", &node.light.timeOfDay, 0.01f, 0.f, 24.f, disp)) {
                 float angle = (node.light.timeOfDay - 12.0f) * 15.0f; 
@@ -216,11 +217,12 @@ void Properties::renderProperties(Heiarchy* h) {
         ImGui::TableSetColumnIndex(1); /* handled below */
         ImGui::EndTable();
 
-        BeginTable2Col();
-        ColorRow("Fog Color",  node.light.fogColor);
-        FloatRow("Fog Start",  node.light.fogStart, 1.f, 0.f, 5000.f);
-        FloatRow("Fog End",    node.light.fogEnd,   1.f, 0.f, 5000.f);
-        ImGui::EndTable();
+        if (BeginTable2Col("##t_lighting_fog")) {
+            ColorRow("Fog Color",  node.light.fogColor);
+            FloatRow("Fog Start",  node.light.fogStart, 1.f, 0.f, 5000.f);
+            FloatRow("Fog End",    node.light.fogEnd,   1.f, 0.f, 5000.f);
+            ImGui::EndTable();
+        }
 
         ImGui::End();
         return;
@@ -228,11 +230,12 @@ void Properties::renderProperties(Heiarchy* h) {
 
     ImGui::Text("Transform");
     ImGui::Spacing();
-    BeginTable2Col();
-    DragVec3Row("Position", node.position, 0.1f);
-    DragVec3Row("Rotation", node.rotation, 0.5f);
-    DragVec3Row("Scale",    node.scale,    0.01f);
-    ImGui::EndTable();
+    if (BeginTable2Col("##t_transform")) {
+        DragVec3Row("Position", node.position, 0.1f);
+        DragVec3Row("Rotation", node.rotation, 0.5f);
+        DragVec3Row("Scale",    node.scale,    0.01f);
+        ImGui::EndTable();
+    }
 
     if (node.type == NodeType::Camera) {
         ImGui::Separator();
@@ -247,9 +250,10 @@ void Properties::renderProperties(Heiarchy* h) {
             }
         }
 
-        BeginTable2Col();
-        SliderRow("FOV", node.fov, 10.0f, 170.0f, "%.1f°");
-        ImGui::EndTable();
+        if (BeginTable2Col("##t_FOV")) {
+            SliderRow("FOV", node.fov, 10.0f, 170.0f, "%.1f°");
+            ImGui::EndTable();
+        }
     }
 
     if (node.type == NodeType::Mesh) {
@@ -266,20 +270,28 @@ void Properties::renderProperties(Heiarchy* h) {
         ImGui::Text("Physics");
         ImGui::Spacing();
 
-        BeginTable2Col();
+        if (BeginTable2Col("##t_physics")) {
 
-        DragVec3Row("Velocity", node.velocity, 0.1f);
+            DragVec3Row("Velocity", node.velocity, 0.1f);
 
-        ImGui::Checkbox("Anchored", &node.isAnchored);
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0); 
+            ImGui::AlignTextToFramePadding(); 
+            ImGui::TextUnformatted("Anchored");
 
-        ImGui::EndTable();
+            ImGui::TableSetColumnIndex(1);
+            ImGui::Checkbox("###anchored", &node.isAnchored);
+
+            ImGui::EndTable();
+        }
         ImGui::Separator();
         ImGui::Text("Material");
         ImGui::Spacing();
-        BeginTable2Col();
-        SliderRow("Roughness", node.roughness, 0.0f, 1.0f);
-        SliderRow("Metallic",  node.metallic,  0.0f, 1.0f);
-        ImGui::EndTable();
+        if (BeginTable2Col("##t_material")) {
+            SliderRow("Roughness", node.roughness, 0.0f, 1.0f);
+            SliderRow("Metallic",  node.metallic,  0.0f, 1.0f);
+            ImGui::EndTable();
+        }
     }
     else {
         ImGui::Separator();
@@ -290,7 +302,7 @@ void Properties::renderProperties(Heiarchy* h) {
         ImGui::Text("%s", lbl);
         ImGui::Spacing();
 
-        BeginTable2Col();
+        BeginTable2Col("##t_texture");
         ColorRow("Color",     node.light.color);
         FloatRow("Intensity", node.light.intensity, 0.01f, 0.f, 100.f);
 
@@ -322,5 +334,4 @@ void Properties::renderProperties(Heiarchy* h) {
     }
     ImGui::End();
 }
-
 }

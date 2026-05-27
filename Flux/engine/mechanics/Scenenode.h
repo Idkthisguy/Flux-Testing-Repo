@@ -76,7 +76,12 @@ namespace Flux {
 
         float fov = 70.0f;
 
+        bool hasPhysicsTransform = false; // switch between physics simulation and editor render
+
         glm::mat4 GetTransformMatrix() const {
+            if (hasPhysicsTransform)
+                return physicsWorldMatrix;
+
             float m[16];
             float t[3] = { position.x, position.y, position.z };
             float r[3] = { rotation.x, rotation.y, rotation.z };

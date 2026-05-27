@@ -26,6 +26,7 @@ Window::Window(int width, int height, const std::string &title) : m_width(width)
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    
 
     m_window = SDL_CreateWindow(m_title.c_str(), m_width, m_height,
                                 SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
@@ -59,8 +60,6 @@ Window::Window(int width, int height, const std::string &title) : m_width(width)
     {
         std::cerr << "ERROR: FAILED TO INITIALIZE GLAD" << std::endl;
     }
-
-    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
 
     {
         int iconW, iconH, iconCh;

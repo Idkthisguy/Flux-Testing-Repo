@@ -70,3 +70,4 @@ Thanks to these libraries that got me this far:
 - [Spotlight (Freepik)](https://www.flaticon.com/free-icon/spotlight_4014388?term=spotlight&page=1&position=7&origin=search&related_id=4014388)
 - [Direction Light (Freepik)](https://www.flaticon.com/free-icon/sun_66275?term=sun&page=1&position=1&origin=search&related_id=66275)
 - [Camera (Good Ware)](https://www.flaticon.com/free-icon/video-camera_686458?term=camera&page=1&position=15&origin=search&related_id=686458)
+### [Blender (For models)](https://www.blender.org/)

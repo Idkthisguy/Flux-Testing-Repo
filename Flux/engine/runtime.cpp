@@ -54,6 +54,15 @@ void Runtime::Start(const std::string &projectName, const std::filesystem::path 
 
     SDL_GL_MakeCurrent(m_window, m_glContext);
 
+    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
+        Output::addLog("RUNTIME ERROR: Failed to load GLAD for runtime context");
+        isRunning = false;
+        return;
+    }
+
+    SDL_ShowWindow(m_window);
+    SDL_RaiseWindow(m_window);
+
     SplashConfig splash;
     splash.title = "Flux Game";
     splash.subtitle = "Loading...";
@@ -236,6 +245,7 @@ void Runtime::Update()
             glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), node.scale);
 
             node.physicsWorldMatrix = transMat * rotMat * scaleMat;
+            node.hasPhysicsTransform = true;
             node.position = glm::vec3(pos.GetX(), pos.GetY(), pos.GetZ());
         }
 
