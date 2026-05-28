@@ -9,6 +9,8 @@
 #include "output.h"
 #include "stb_image.h"
 
+#include "utils/pathHelper.h"
+
 namespace Flux
 {
 
@@ -32,7 +34,7 @@ inline void RunSplashScreen(SDL_Window *window, const SplashConfig &cfg = {})
     GLuint textureID = 0;
     {
         int imgW, imgH, channels;
-        unsigned char *data = stbi_load("assets/splash/iconSplash.png", &imgW, &imgH, &channels, 4);
+        unsigned char *data = stbi_load(PathHelper::GetAssetPath("assets/splash/iconSplash.png").c_str(), &imgW, &imgH, &channels, 4);
         if (data)
         {
             glGenTextures(1, &textureID);

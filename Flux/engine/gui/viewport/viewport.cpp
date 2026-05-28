@@ -307,6 +307,8 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
     {
         if (!node.model)
             continue;
+        if (node.type == NodeType::Camera)
+            continue;
         renderer->DrawScene(*node.model, node.textureID, node.GetTransformMatrix(), view, proj, camera->Position,
                             heiarchy.nodes, 1.0f, node.roughness, node.metallic, timeOfDay, node.baseColor);
     }
@@ -332,23 +334,8 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
                 node.textureID = TextureLoader::Load(p);
         }
 
-        if (node.model)
-        {
-            glm::mat4 camMat = node.GetTransformMatrix();
-            camMat = glm::scale(camMat, glm::vec3(0.25f));
-            renderer->DrawScene(*node.model, 0, camMat, view, proj, camera->Position, heiarchy.nodes);
-        }
-        else if (node.textureID != 0)
-        {
+        if (node.textureID != 0)
             renderer->DrawBillboard(node.textureID, node.position, 0.5f, view, proj);
-        }
-
-        if (node.type == NodeType::Camera)
-        {
-            glm::mat4 modelMat = node.GetTransformMatrix();
-
-            CameraGizmoRenderer::Draw(modelMat, view, proj, IM_COL32(0, 220, 255, 255));
-        }
     }
 
     glManager->Unbind();
@@ -357,6 +344,28 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
 
     ImGui::Image(reinterpret_cast<void *>(static_cast<intptr_t>(glManager->GetTexture())), sz, ImVec2(0, 1),
                  ImVec2(1, 0));
+
+    for (auto &node : heiarchy.nodes)
+    {
+        if (node.type != NodeType::Camera)
+            continue;
+
+        if (node.textureID == 0)
+        {
+            std::string p = PathHelper::GetAssetPath("assets/icons/camera.png");
+            if (std::filesystem::exists(p))
+                node.textureID = TextureLoader::Load(p);
+        }
+
+        if (node.type == NodeType::Camera)
+        {
+
+             bool selected = (heiarchy.selectedIndex >= 0 &&
+                         &heiarchy.nodes[heiarchy.selectedIndex] == &node);
+            ImU32 col = selected ? IM_COL32(255, 230, 0, 255) : IM_COL32(0, 210, 255, 200);
+            CameraGizmoRenderer::Draw(node.GetTransformMatrix(), view, proj, imagePos, sz, node.fov, col);
+        }
+    }
 
     ImVec2 mousePos = io.MousePos;
     ImVec2 mouseInCanvas(mousePos.x - imagePos.x, mousePos.y - imagePos.y);
@@ -529,8 +538,6 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
             ImGui::EndPopup();
         }
     }
-
-    ImGui::Checkbox("Show Grid", &showGrid);
 
     ImGui::End();
 }

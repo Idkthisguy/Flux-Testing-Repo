@@ -10,6 +10,7 @@
 #include "mechanics/SceneSerializer.h"
 
 #include "viewport.h"
+
 class TextEditor;	
 class SceneSerializer;
 

@@ -1,69 +1,52 @@
+
 #pragma once
+#include <cmath>
 #include <glm/glm.hpp>
 #include <imgui.h>
-#include <vector>
-
 
 namespace Flux
 {
 
 struct CameraGizmoRenderer
 {
-
-    static void Draw(const glm::mat4 &modelMatrix, const glm::mat4 &view, const glm::mat4 &proj,
-                     ImU32 color = IM_COL32(255, 255, 0, 255))
+    static ImVec2 Project(const glm::vec3 &local, const glm::mat4 &mvp, ImVec2 imagePos, ImVec2 sz)
     {
-        ImDrawList *drawList = ImGui::GetWindowDrawList();
-        ImVec2 windowPos = ImGui::GetWindowPos();
-        ImVec2 windowSize = ImGui::GetWindowSize();
+        glm::vec4 clip = mvp * glm::vec4(local, 1.0f);
+        if (clip.w <= 0.0f)
+            clip.w = 0.0001f;
+        glm::vec3 ndc = glm::vec3(clip) / clip.w;
+        return ImVec2(imagePos.x + (ndc.x + 1.0f) * 0.5f * sz.x, imagePos.y + (1.0f - ndc.y) * 0.5f * sz.y);
+    }
 
-        std::vector<glm::vec3> localVertices = {
-
-            {-0.20f, 0.15f, 0.40f}, {0.20f, 0.15f, 0.40f}, {0.20f, -0.15f, 0.40f}, {-0.20f, -0.15f, 0.40f},
-            {-0.20f, 0.15f, 0.15f}, {0.20f, 0.15f, 0.15f}, {0.20f, -0.15f, 0.15f}, {-0.20f, -0.15f, 0.15f},
-
-            {0.00f, 0.00f, 0.00f}};
-
-        std::vector<ImVec2> screenPoints(localVertices.size());
+    static void Draw(const glm::mat4 &modelMatrix, const glm::mat4 &view, const glm::mat4 &proj, ImVec2 imagePos,
+                     ImVec2 sz, float fov, ImU32 color = IM_COL32(0, 220, 255, 220))
+    {
+        ImDrawList *dl = ImGui::GetWindowDrawList();
         glm::mat4 mvp = proj * view * modelMatrix;
 
-        for (size_t i = 0; i < localVertices.size(); ++i)
-        {
-            glm::vec4 clipSpace = mvp * glm::vec4(localVertices[i], 1.0f);
+        auto P = [&](glm::vec3 v) { return Project(v, mvp, imagePos, sz); };
 
-            if (clipSpace.w <= 0.0f)
-                clipSpace.w = 0.0001f;
+        const float depth = 0.7f;
 
-            glm::vec3 ndc = glm::vec3(clipSpace) / clipSpace.w;
+        const float halfH = std::tan(glm::radians(fov * 0.5f)) * depth;
 
-            float screenX = windowPos.x + (ndc.x + 1.0f) * 0.5f * windowSize.x;
-            float screenY = windowPos.y + (1.0f - ndc.y) * 0.5f * windowSize.y;
-            screenPoints[i] = ImVec2(screenX, screenY);
-        }
+        const float halfW = halfH * (16.0f / 9.0f);
 
-        auto DrawLine = [&](int idxA, int idxB) {
-            drawList->AddLine(screenPoints[idxA], screenPoints[idxB], color, 2.0f);
-        };
+        glm::vec3 apex = {0.f, 0.f, 0.f};
+        glm::vec3 tl = {-halfW, halfH, -depth};
+        glm::vec3 tr = {halfW, halfH, -depth};
+        glm::vec3 br = {halfW, -halfH, -depth};
+        glm::vec3 bl = {-halfW, -halfH, -depth};
 
-        DrawLine(0, 1);
-        DrawLine(1, 2);
-        DrawLine(2, 3);
-        DrawLine(3, 0);
+        dl->AddLine(P(apex), P(tl), color, 1.8f);
+        dl->AddLine(P(apex), P(tr), color, 1.8f);
+        dl->AddLine(P(apex), P(br), color, 1.8f);
+        dl->AddLine(P(apex), P(bl), color, 1.8f);
 
-        DrawLine(4, 5);
-        DrawLine(5, 6);
-        DrawLine(6, 7);
-        DrawLine(7, 4);
-
-        DrawLine(0, 4);
-        DrawLine(1, 5);
-        DrawLine(2, 6);
-        DrawLine(3, 7);
-
-        DrawLine(4, 8);
-        DrawLine(5, 8);
-        DrawLine(6, 8);
-        DrawLine(7, 8);
+        dl->AddLine(P(tl), P(tr), color, 1.8f);
+        dl->AddLine(P(tr), P(br), color, 1.8f);
+        dl->AddLine(P(br), P(bl), color, 1.8f);
+        dl->AddLine(P(bl), P(tl), color, 1.8f);
     }
 };
 

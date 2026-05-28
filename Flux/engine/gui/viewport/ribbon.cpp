@@ -202,6 +202,16 @@ void Ribbon::drawEditMenu()
             ImGui::EndDisabled();
         ImGui::EndMenu();
     }
+
+    bool gridVisibleCheck = (bool)viewportPtr->showGrid;
+
+    if (ImGui::BeginMenu("View")) {
+        if (ImGui::Checkbox("Show grid", &gridVisibleCheck)) {
+            viewportPtr->showGrid = gridVisibleCheck;
+        }
+
+        ImGui::EndMenu();
+    }
 }
 
 void Ribbon::drawProjectControls()

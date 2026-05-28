@@ -45,7 +45,8 @@ static bool ColorRow(const char* label, glm::vec3& c) {
 
 static bool FloatRow(const char* label, float& f,
                      float spd = 0.01f, float mn = 0.f, float mx = FLT_MAX,
-                     const char* fmt = "%.3f") {
+                     const char* fmt = "%.3f",
+                    ImGuiSliderFlags flags = 0) {
     ImGui::PushID(label);
     ImGui::TableNextRow();
     ImGui::TableSetColumnIndex(0); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted(label);
