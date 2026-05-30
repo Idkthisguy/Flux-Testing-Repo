@@ -1,4 +1,4 @@
-MAINICON ICON "assets/flux.ico"
+MAINICON ICON "../assets/flux.ico"
 
 1 VERSIONINFO
 FILEVERSION 1,0,0,0
