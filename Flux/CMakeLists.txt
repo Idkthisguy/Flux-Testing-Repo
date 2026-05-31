@@ -1,4 +1,12 @@
 ﻿cmake_minimum_required(VERSION 3.10)
+
+if (WIN32)
+    if (DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+        set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+    endif ()
+    set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "")
+endif ()
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(VCPKG_TARGET_TRIPLET "x64-windows-llvm" CACHE STRING "")
 endif()

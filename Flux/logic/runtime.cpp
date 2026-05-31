@@ -2,12 +2,14 @@
 #include <glad/glad.h>
 #include <iostream>
 
-#include <Jolt/RegisterTypes.h>
-#include <Jolt/Physics/Body/BodyCreationSettings.h>
-#include <Jolt/Physics/Collision/Shape/BoxShape.h>
-#include <Jolt/Math/Vec3.h>
 #include <Jolt/Math/Quat.h>
-
+#include <Jolt/Math/Vec3.h>
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/Body/MotionType.h>
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Collision/Shape/ConvexHullShape.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
+#include <Jolt/RegisterTypes.h>
 namespace Flux
 {
 
@@ -54,7 +56,8 @@ void Runtime::Start(const std::string &projectName, const std::filesystem::path 
 
     SDL_GL_MakeCurrent(m_window, m_glContext);
 
-    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
+    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
+    {
         Output::addLog("RUNTIME ERROR: Failed to load GLAD for runtime context");
         isRunning = false;
         return;
@@ -125,63 +128,109 @@ void Runtime::Start(const std::string &projectName, const std::filesystem::path 
 
     static bool joltInitialized = false;
 
-    if (!joltInitialized) {
+    if (!joltInitialized)
+    {
         JPH::RegisterDefaultAllocator();
         JPH::Factory::sInstance = new JPH::Factory();
         JPH::RegisterTypes();
         joltInitialized = true;
     }
     m_tempAllocator = new JPH::TempAllocatorImpl(10 * 1024 * 1024);
-    m_jobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() -1);
+    m_jobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers,
+                                               std::thread::hardware_concurrency() - 1);
 
     m_PhysicsSystem = new JPH::PhysicsSystem();
 
     JPH::PhysicsSettings settings;
 
-    m_PhysicsSystem->SetGravity(JPH::Vec3(0.0f, -4.0f,  0.0f));
+    m_PhysicsSystem->SetGravity(JPH::Vec3(0.0f, -4.0f, 0.0f));
 
-    m_PhysicsSystem->Init(1024, 
-        0, 
-        1024, 
-        1024, 
-        m_broadPhaseLayerInterface, 
-        m_objectVsBroadPhaseLayerFilter, 
-        m_objectLayerPairFilter
-    );
+    m_PhysicsSystem->Init(1024, 0, 1024, 1024, m_broadPhaseLayerInterface, m_objectVsBroadPhaseLayerFilter,
+                          m_objectLayerPairFilter);
 
-    JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
-    for (auto &node : m_gameNodes) {
-        if (node.type == NodeType::Mesh) {
-            JPH::BoxShapeSettings shapeSettings(JPH::Vec3(node.scale.x, node.scale.y, node.scale.z));
-            JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
+    JPH::BodyInterface &bodyInterface = m_PhysicsSystem->GetBodyInterface();
+    for (auto &node : m_gameNodes)
+    {
+        if (node.type == NodeType::Mesh && node.model)
+        {
+            JPH::ShapeRefC finalShape;
 
-            if (shapeResult.HasError()) {
-                Output::addLog("Jolt shape Creation Error: " + std::string(shapeResult.GetError().c_str()));
-                std::cerr << "JOLT SHAPE CREATION ERROR!!: " + std::string(shapeResult.GetError().c_str());
-                continue;
+            JPH::Array<JPH::Vec3> joltVerticies;
+            for (const auto &mesh : node.model->meshes)
+            {
+                for (const auto &v : mesh.verticies)
+                {
+                    joltVerticies.push_back(JPH::Vec3(v.Position.x * node.scale.x, v.Position.y * node.scale.y,
+                                                      v.Position.z * node.scale.z));
+                }
             }
 
-            JPH::ShapeRefC shape = shapeResult.Get();
-            
-            JPH::EMotionType motionType = node.isAnchored ? JPH::EMotionType::Static : JPH::EMotionType::Dynamic;
-            JPH::ObjectLayer    layer = node.isAnchored ? Flux::Layers::NON_MOVING : Flux::Layers::MOVING;
+            if (!node.isAnchored)
+            {
+                JPH::ConvexHullShapeSettings hullSettings(joltVerticies, JPH::cDefaultConvexRadius);
+                JPH::ShapeSettings::ShapeResult hullResult = hullSettings.Create();
+
+                if (hullResult.HasError())
+                {
+                    Output::addLog("Hull Error: " + std::string(hullResult.GetError().c_str()));
+                    continue;
+                }
+
+                finalShape = hullResult.Get();
+            }
+            else
+            {
+                JPH::VertexList joltVerticies;
+                JPH::IndexedTriangleList joltTriangles;
+
+                uint32_t vertexOffset = 0;
+
+                for (const auto &mesh : node.model->meshes)
+                {
+                    for (const auto &v : mesh.verticies)
+                    {
+                        joltVerticies.push_back(JPH::Float3(v.Position.x * node.scale.x, v.Position.y * node.scale.y,
+                                                            v.Position.z * node.scale.z));
+                    }
+
+                    for (size_t i = 0; i < mesh.indices.size(); i += 3)
+                    {
+                        joltTriangles.push_back(JPH::IndexedTriangle(vertexOffset + mesh.indices[i],
+                                                                     vertexOffset + mesh.indices[i + 1],
+                                                                     vertexOffset + mesh.indices[i + 2]));
+                    }
+
+                    vertexOffset += mesh.verticies.size();
+                }
+
+                JPH::MeshShapeSettings meshSettings(joltVerticies, joltTriangles);
+
+                meshSettings.Sanitize();
+
+                JPH::ShapeSettings::ShapeResult meshResult = meshSettings.Create();
+                if (meshResult.HasError())
+                {
+                    Output::addLog("TriMesh Error: " + std::string(meshResult.GetError().c_str()));
+                    continue;
+                }
+
+                finalShape = meshResult.Get();
+            }
+
+            JPH::EMotionType motionType = node.isAnchored ? JPH::EMotionType::Kinematic : JPH::EMotionType::Dynamic;
+            JPH::ObjectLayer layer = node.isAnchored ? Layers::NON_MOVING : Layers::MOVING;
 
             auto rot = glm::radians(node.rotation);
-            JPH::Quat joltRotation = JPH::Quat::sEulerAngles(
-                JPH::Vec3(rot.x, rot.y, rot.z)
-            );
+            JPH::Quat joltRotation = JPH::Quat::sEulerAngles(JPH::Vec3(rot.x, rot.y, rot.z));
 
-            JPH::BodyCreationSettings settings(
-                shape,
-                JPH::Vec3(node.position.x, node.position.y, node.position.z),
-                joltRotation,
-                motionType,
-                layer
-            );
+            JPH::BodyCreationSettings settings(finalShape, JPH::Vec3(node.position.x, node.position.y, node.position.z),
+                                               joltRotation, motionType, layer);
 
-            JPH::Body* body = bodyInterface.CreateBody(settings);
+            settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
+            settings.mMassPropertiesOverride.mMass = 1.0f;
+
+            JPH::Body *body = bodyInterface.CreateBody(settings);
             bodyInterface.AddBody(body->GetID(), JPH::EActivation::Activate);
-
             node.physicsBodyID = body->GetID();
         }
     }
@@ -199,14 +248,10 @@ void Runtime::Update()
 
     if (!SDL_GL_MakeCurrent(m_window, m_glContext))
     {
-
         Output::addLog("RUNTIME ERROR: Context re-binding failed: " + std::string(SDL_GetError()));
         isRunning = false;
         return;
     }
-
-    if (!isRunning || !m_window || !m_glContext)
-        return;
 
     m_luaEngine.step();
 
@@ -215,7 +260,6 @@ void Runtime::Update()
 
     glViewport(0, 0, w, h);
     glEnable(GL_DEPTH_TEST);
-
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -225,17 +269,30 @@ void Runtime::Update()
     glm::mat4 proj = glm::perspective(glm::radians(70.0f), (float)w / (float)h, 0.1f, 2000.0f);
     glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, glm::vec3(0, 1, 0));
 
-    uint64_t semiCurrentTIme = SDL_GetPerformanceCounter();
-    float dt = (float)(semiCurrentTIme - lastTimeFrame) / (float)SDL_GetPerformanceFrequency();
+    uint64_t semiCurrentTime = SDL_GetPerformanceCounter();
+    float dt = (float)(semiCurrentTime - lastTimeFrame) / (float)SDL_GetPerformanceFrequency();
+    if (dt > 0.33f)
+        dt = 0.33f;
 
-    if (dt > 0.33f) dt = 0.33f;
+    JPH::BodyInterface &bodyInterface = m_PhysicsSystem->GetBodyInterface();
+
+    for (auto &node : m_gameNodes)
+    {
+        if (node.type == NodeType::Mesh && node.isAnchored && !node.physicsBodyID.IsInvalid())
+        {
+            JPH::Vec3 joltPos(node.position.x, node.position.y, node.position.z);
+            auto rot = glm::radians(node.rotation);
+            JPH::Quat joltRot = JPH::Quat::sEulerAngles(JPH::Vec3(rot.x, rot.y, rot.z));
+            bodyInterface.SetPositionAndRotation(node.physicsBodyID, joltPos, joltRot, JPH::EActivation::Activate);
+        }
+    }
 
     m_PhysicsSystem->Update(dt, 1, m_tempAllocator, m_jobSystem);
 
-    JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
     for (auto &node : m_gameNodes)
     {
-        if (node.type == NodeType::Mesh && !node.isAnchored) {
+        if (node.type == NodeType::Mesh && !node.isAnchored && !node.physicsBodyID.IsInvalid())
+        {
             JPH::Vec3 pos = bodyInterface.GetPosition(node.physicsBodyID);
             JPH::Quat rot = bodyInterface.GetRotation(node.physicsBodyID);
 
@@ -249,6 +306,15 @@ void Runtime::Update()
             node.position = glm::vec3(pos.GetX(), pos.GetY(), pos.GetZ());
         }
 
+        if (node.isLightingNode)
+        {
+            gameTime = node.light.timeOfDay;
+            gameSunDir = node.light.direction;
+        }
+    }
+
+    for (auto &node : m_gameNodes)
+    {
         if (node.type == NodeType::Camera && node.isMainCamera)
         {
             glm::mat4 transform = node.GetTransformMatrix();
@@ -257,13 +323,9 @@ void Runtime::Update()
             glm::vec3 camUp = glm::normalize(glm::vec3(transform * glm::vec4(0, 1, 0, 0)));
 
             view = glm::lookAt(camPos, camPos + camFront, camUp);
-            proj = glm::perspective(glm::radians(node.fov > 0 ? node.fov : 70.0f), (float)w / (float)h, 0.1f, 2000.0f);
+            proj =
+                glm::perspective(glm::radians(node.fov > 0.f ? node.fov : 70.0f), (float)w / (float)h, 0.1f, 2000.0f);
             break;
-        }
-        if (node.isLightingNode)
-        {
-            gameTime = node.light.timeOfDay;
-            gameSunDir = node.light.direction;
         }
     }
 
@@ -284,7 +346,7 @@ void Runtime::Update()
     if (m_window && m_glContext)
         SDL_GL_MakeCurrent(m_window, nullptr);
 
-    lastTimeFrame = semiCurrentTIme;
+    lastTimeFrame = semiCurrentTime;
 }
 
 void Runtime::Stop()
@@ -294,12 +356,17 @@ void Runtime::Stop()
 
     Output::addLog("Stopping runtime...");
 
-    if (m_tempAllocator != nullptr && m_PhysicsSystem != nullptr) {
-        JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
-        for (auto &node : m_gameNodes) {
-            if (node.type == NodeType::Mesh) {
+    if (m_tempAllocator != nullptr && m_PhysicsSystem != nullptr)
+    {
+        JPH::BodyInterface &bodyInterface = m_PhysicsSystem->GetBodyInterface();
+        for (auto &node : m_gameNodes)
+        {
+            if (node.type == NodeType::Mesh && !node.physicsBodyID.IsInvalid())
+            {
                 bodyInterface.RemoveBody(node.physicsBodyID);
                 bodyInterface.DestroyBody(node.physicsBodyID);
+
+                node.physicsBodyID = JPH::BodyID();
             }
         }
 

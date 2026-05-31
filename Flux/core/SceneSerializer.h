@@ -121,14 +121,10 @@ namespace Flux {
                     }
 
                     if (n.type == NodeType::Camera) {
-                    std::string modelPath = PathHelper::GetAssetPath("assets/models/camera.obj");
-                    if (std::filesystem::exists(modelPath))
-                        n.model = std::make_shared<Model>(modelPath);
-                    // icon
-                    std::string iconPath = PathHelper::GetAssetPath("assets/icons/camera.png");
-                    if (std::filesystem::exists(iconPath))
-                        n.textureID = TextureLoader::Load(iconPath);
-                }
+                        std::string iconPath = PathHelper::GetAssetPath("assets/icons/camera.png");
+                        if (std::filesystem::exists(iconPath))
+                            n.textureID = TextureLoader::Load(iconPath);
+                    }
                 h.nodes.push_back(n);
                 }
             }

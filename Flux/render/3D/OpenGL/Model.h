@@ -25,6 +25,9 @@ namespace Flux {
         unsigned int textureID  = 0;
         glm::vec3    matColor   = glm::vec3(0.8f, 0.4f, 0.1f);
         bool         hasMtlColor = false;
+
+        std::vector<Vertex> verticies;
+        std::vector<unsigned int> indices;
     };
 
     class Model {
