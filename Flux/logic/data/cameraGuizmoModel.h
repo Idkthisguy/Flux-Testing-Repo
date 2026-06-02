@@ -26,7 +26,7 @@ struct CameraGizmoRenderer
 
         auto P = [&](glm::vec3 v) { return Project(v, mvp, imagePos, sz); };
 
-        const float depth = 0.7f;
+        const float depth = 0.8f;
 
         const float halfH = std::tan(glm::radians(fov * 0.5f)) * depth;
 

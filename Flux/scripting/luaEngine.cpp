@@ -149,8 +149,6 @@ namespace Flux {
                 Output::addLog("LUA RUNTIME ERROR (onStart): " + std::string(err.what()));
             }
         }
-
-        if (isRunning && onStart.valid()) onStart();
     }
 
    void LuaEngine::step() {

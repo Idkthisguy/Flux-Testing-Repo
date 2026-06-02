@@ -57,8 +57,7 @@ namespace Flux
 				std::filesystem::path searchPath = std::filesystem::current_path();
 				bool found = false;
 				for (int i = 0; i < 5; ++i) {
-					auto candidate = searchPath / "templates" /
-					    "Project_Templates" / "base_game_folder_lua";
+					auto candidate = PathHelper::GetAssetPath("templates/Project_Templates/base_game_folder_lua");
 					if (std::filesystem::exists(candidate)) {
 						pendingTemplateRoot = candidate;
 						found = true;
@@ -462,8 +461,7 @@ namespace Flux
 		bool found = false;
 
 		for (int i = 0; i < 5; ++i) {
-			auto p = searchPath / "templates" / "File_Templates" /
-			         folderType / templateName;
+			auto p = PathHelper::GetAssetPath("templates/File_Templates/scripts/TemplateScript.lua");
 			if (std::filesystem::exists(p)) {
 				absoluteTemplatePath = p;
 				found = true;

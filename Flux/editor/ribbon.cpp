@@ -171,6 +171,16 @@ void Ribbon::drawFileMenu()
             }
         }
 
+        if (ImGui::BeginMenu("Import 3D Model...")) {
+            if (ImGui::MenuItem(".obj")) {
+            }
+
+            if (ImGui::MenuItem(".fbx")) {
+            }
+
+            ImGui::EndMenu();
+        }
+
         if (!hasProject)
             ImGui::EndDisabled();
 

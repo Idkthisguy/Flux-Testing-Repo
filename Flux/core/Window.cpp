@@ -410,7 +410,7 @@ void Window::update()
     SDL_GL_MakeCurrent(m_window, m_glContext);
     SDL_GL_SwapWindow(m_window);
 
-    m_runtime.SyncCamera(m_viewport.camera->Position, m_viewport.camera->Position + m_viewport.camera->Front);
+    //m_runtime.SyncCamera(m_viewport.camera->Position, m_viewport.camera->Position + m_viewport.camera->Front);
     m_runtime.Update();
 
     if (m_window && m_glContext)
