@@ -367,3 +367,5 @@ CMakeLists.txt
 Flux/assets/fonts
 CppProperties.json
 .vscode/
+out/
+Flux/lib
