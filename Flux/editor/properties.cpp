@@ -272,15 +272,11 @@ void Properties::renderProperties(Heiarchy* h) {
         ImGui::Spacing();
 
         if (BeginTable2Col("##t_physics")) {
-
-            DragVec3Row("Velocity", node.velocity, 0.1f);
-
             ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0); 
-            ImGui::AlignTextToFramePadding(); 
-            ImGui::TextUnformatted("Anchored");
+            ImGui::TableNextColumn();
 
-            ImGui::TableSetColumnIndex(1);
+            ImGui::TextUnformatted("Anchored");
+            ImGui::TableNextColumn();
             ImGui::Checkbox("###anchored", &node.isAnchored);
 
             ImGui::EndTable();

@@ -39,11 +39,15 @@ Flux gonna be cross platform on release (Except for macOS which is still in deve
 *A screenshot for the lighting in Flux (as of May 2. 2026)*
 ![Screenshot](cool/LightingSnapshotRestoring.png)
 
+*[Kost](https://github.com/Kost233)'s screenshot of Flux at June 4, 2026*
+![Screenshot](cool/Kost'sFirstScreenshot.png)
+
 ## Top Contributors
 
-Small party, I know ;-; (literally just me)
+Small party, I know ;-;
 
 - [@Idkthisguy](https://github.com/Idkthisguy) - Creator and lead developer
+- [@Kost233](https://github.com/Kost233)
 
 ## Dependencies
 Flux was built with a lot of libraries. and without these libraries, I would've just gave up by now.
@@ -65,6 +69,8 @@ Thanks to these libraries that got me this far:
 - [Jolt Physics](https://github.com/jrouwe/joltphysics) - For physics and collisions
 
 ## Credits
+### Inspired by [Godot](https://godotengine.org/) and [Unity](https://unity.com/) game engines
+
 ### [Favicon (for icons)](https://www.flaticon.com/)
 - [Point Light (Freepik)](https://www.flaticon.com/free-icon/idea_566410?term=lightbulb&page=1&position=4&origin=search&related_id=566410)
 - [Spotlight (Freepik)](https://www.flaticon.com/free-icon/spotlight_4014388?term=spotlight&page=1&position=7&origin=search&related_id=4014388)
