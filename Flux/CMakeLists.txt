@@ -116,7 +116,6 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/render" DESTINATION "${CMAKE_CURRENT_BINA
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/scripting" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/shaders" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/lib" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/lib/luajit/src" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
     set_property(TARGET Flux PROPERTY CXX_STANDARD 20)
@@ -126,6 +125,10 @@ endif ()
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
+
+target_link_directories(Flux PRIVATE
+    ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/$<$<CONFIG:Debug>:debug/>lib
+)
 
 target_link_libraries(Flux PRIVATE
         glm::glm
@@ -143,7 +146,7 @@ if (WIN32)
             imguizmo::imguizmo
             opengl32
             dwmapi
-            "${CMAKE_CURRENT_SOURCE_DIR}/lib/luajit/src/lua51.lib"
+            lua51
     )
     target_link_options(Flux PRIVATE 
         "$<$<CONFIG:Debug>:/SUBSYSTEM:CONSOLE>"
@@ -162,8 +165,8 @@ target_include_directories(Flux PRIVATE
         "engine"
         "assets"
         ${CMAKE_CURRENT_SOURCE_DIR}
-        "${CMAKE_CURRENT_SOURCE_DIR}/lib/luajit/src"
-        "lib/luajit/src"
+        ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include
+        ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include/luajit
 )
 
 if (NOT WIN32)
