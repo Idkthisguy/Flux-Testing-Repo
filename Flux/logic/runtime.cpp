@@ -412,9 +412,6 @@ void Runtime::Stop()
     if (m_glContext && m_window)
     {
         SDL_GL_MakeCurrent(m_window, m_glContext);
-        for (auto &[path, id] : m_runtimeTextureCache)
-            if (id)
-                glDeleteTextures(1, &id);
         m_runtimeTextureCache.clear();
     }
 

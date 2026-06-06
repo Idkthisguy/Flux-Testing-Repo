@@ -80,9 +80,9 @@ class SceneSerializer
 
             j["nodes"].push_back(n);
         }
-        std::ofstream file(filePath);
-        file << j.dump(4);
         j["version"] = 2;
+        std::ofstream file(filePath);
+        file << j.dump(4);       
     }
 
     static void Load(Heiarchy &h, const std::filesystem::path &loadPath, const std::filesystem::path &projectRoot)

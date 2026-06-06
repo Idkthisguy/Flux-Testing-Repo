@@ -23,6 +23,7 @@
 #include "logic/SplashScreen.h"
 #include "logic/runtime.h"
 #include "core/SceneSerializer.h"
+#include "render/3D/OpenGL/OpenGLManager.h"
 
 #include <dwmapi.h>
 
@@ -61,6 +62,7 @@ namespace Flux {
         TextEditor m_texteditor;
         LuaEngine  m_luaEngine;
         Runtime    m_runtime;
+        OpenGLManager glManager;
 
         SceneSerializer m_sceneSerializer;
 

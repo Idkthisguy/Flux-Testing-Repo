@@ -17,7 +17,7 @@
 class TextEditor;
 
 namespace Flux {
-	enum class fileType { Folder, Script, Text, Model, Texture };
+	enum class fileType { Folder, Script, Text, Model, Texture, Scene, Project };
 
 	struct virtualFile
 	{

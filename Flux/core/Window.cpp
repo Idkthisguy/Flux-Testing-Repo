@@ -22,7 +22,7 @@ void SetStalkerTheme()
     // Apply Aurora Sizing Variables (from Style.hpp)
     style.WindowPadding = ImVec2(10.0f, 10.0f);
     style.FramePadding = ImVec2(20.0f, 8.0f);
-    style.ItemSpacing = ImVec2(20.0f, 8.0f);
+    style.ItemSpacing = ImVec2(10.0f, 8.0f);
     style.ScrollbarSize = 17.0f;
     style.ScrollbarRounding = 12.0f;
     style.FrameRounding = 8.0f;
@@ -656,7 +656,8 @@ void Window::update()
     SDL_GL_MakeCurrent(m_window, m_glContext);
     SDL_GL_SwapWindow(m_window);
 
-    //m_runtime.SyncCamera(m_viewport.camera->Position, m_viewport.camera->Position + m_viewport.camera->Front);
+    if (m_runtime.isRunning && m_viewport.camera)
+        m_runtime.SyncCamera(m_viewport.camera->Position, m_viewport.camera->Position + m_viewport.camera->Front);
     m_runtime.Update();
 
     if (m_window && m_glContext)
@@ -693,6 +694,9 @@ void Window::StartRuntimeEngine()
         }
     }
 
+    std::filesystem::path backupPath = m_explorer.activeFolderPath/ ".flux" / "temp_runtime_backup.fscn";
+    SceneSerializer::Save(m_heiarchy, backupPath.string(), m_explorer.activeFolderPath);
+
     m_runtimeNodes = m_heiarchy.nodes;
     m_runtime.Start(projName, m_explorer.activeFolderPath, m_runtimeNodes, ps.runtimeWidth, ps.runtimeHeight);
 }
@@ -707,6 +711,17 @@ void Window::StopRuntimeEngine()
     m_ribbon.editorLocked = false;
     m_runtimeNodes.clear();
 
-    Output::addLog("Runtime stopped.");
+    SDL_GL_MakeCurrent(m_window, m_glContext);
+    std::filesystem::path backupPath = m_explorer.activeFolderPath/ ".flux" / "temp_runtime_backup.fscn";
+    if (std::filesystem::exists(backupPath))
+    {
+        SceneSerializer::Load(m_heiarchy, backupPath, m_explorer.activeFolderPath);
+        std::filesystem::remove(backupPath);
+    }
+    int w, h;
+    SDL_GetWindowSize(m_window, &w, &h);
+    glViewport(0, 0, w, h);
+
+    Output::addLog("Runtime stopped. Editor view restored.");
 }
 } // namespace Flux

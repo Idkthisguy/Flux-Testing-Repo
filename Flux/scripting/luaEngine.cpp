@@ -2,55 +2,69 @@
 
 namespace Flux
 {
+
 void LuaEngine::bindEngineAPI()
 {
     lua.new_usertype<glm::vec3>(
-        "Vector3", sol::constructors<glm::vec3(), glm::vec3(float), glm::vec3(float, float, float)>(), "x",
-        &glm::vec3::x, "y", &glm::vec3::y, "z", &glm::vec3::z, sol::meta_function::addition,
-        [](const glm::vec3 &a, const glm::vec3 &b) { return a + b; }, sol::meta_function::subtraction,
-        [](const glm::vec3 &a, const glm::vec3 &b) { return a - b; }, sol::meta_function::multiplication,
-        [](const glm::vec3 &a, float s) { return a * s; });
+        "Vector3",
+        sol::constructors<glm::vec3(), glm::vec3(float), glm::vec3(float, float, float)>(),
+        "x", &glm::vec3::x,
+        "y", &glm::vec3::y,
+        "z", &glm::vec3::z,
+        sol::meta_function::addition,
+            [](const glm::vec3& a, const glm::vec3& b) { return a + b; },
+        sol::meta_function::subtraction,
+            [](const glm::vec3& a, const glm::vec3& b) { return a - b; },
+        sol::meta_function::multiplication,
+            [](const glm::vec3& a, float s) { return a * s; }
+    );
 
     lua["Color3"] = lua["Vector3"];
 
-    lua.new_usertype<glm::vec4>("Color4", sol::constructors<glm::vec4(), glm::vec4(float, float, float, float)>(), "r",
-                                &glm::vec4::x, "g", &glm::vec4::y, "b", &glm::vec4::z, "a", &glm::vec4::w);
+    lua.new_usertype<glm::vec4>(
+        "Color4",
+        sol::constructors<glm::vec4(), glm::vec4(float, float, float, float)>(),
+        "r", &glm::vec4::x,
+        "g", &glm::vec4::y,
+        "b", &glm::vec4::z,
+        "a", &glm::vec4::w
+    );
 
     lua.new_usertype<SceneNode>(
-        "SceneNode", "name", &SceneNode::name, "type", [](SceneNode &n) { return static_cast<int>(n.type); },
-
+        "SceneNode",
+        "name",     &SceneNode::name,
+        "type",     [](SceneNode& n) { return static_cast<int>(n.type); },
         "position",
-        sol::property([](SceneNode &n) { return n.position; },
-                      [](SceneNode &n, const glm::vec3 &v) { n.position = v; }),
+            sol::property(
+                [](SceneNode& n) { return n.position; },
+                [](SceneNode& n, const glm::vec3& v) { n.position = v; }),
         "rotation",
-        sol::property([](SceneNode &n) { return n.rotation; },
-                      [](SceneNode &n, const glm::vec3 &v) { n.rotation = v; }),
+            sol::property(
+                [](SceneNode& n) { return n.rotation; },
+                [](SceneNode& n, const glm::vec3& v) { n.rotation = v; }),
         "baseColor",
-        sol::property([](SceneNode &n) { return n.baseColor; },
-                      [](SceneNode &n, const glm::vec3 &v) { n.baseColor = v; }),
-
-        "roughness", &SceneNode::roughness, "metallic", &SceneNode::metallic, "baseColor", &SceneNode::baseColor,
-
-        "isAnchored", &SceneNode::isAnchored, "isLocked", &SceneNode::isLocked,
-
-        "fov", &SceneNode::fov, "isMainCamera", &SceneNode::isMainCamera);
+            sol::property(
+                [](SceneNode& n) { return n.baseColor; },
+                [](SceneNode& n, const glm::vec3& v) { n.baseColor = v; }),
+        "roughness",    &SceneNode::roughness,
+        "metallic",     &SceneNode::metallic,
+        "isAnchored",   &SceneNode::isAnchored,
+        "isLocked",     &SceneNode::isLocked,
+        "fov",          &SceneNode::fov,
+        "isMainCamera", &SceneNode::isMainCamera
+    );
 
     sol::table engineTable = lua.create_table();
 
-    engineTable["getNode"] = [this](const std::string &nodeName) -> SceneNode * {
-        if (!activeNodes)
-            return nullptr;
-        for (auto &node : *activeNodes)
-        {
-            if (node.name == nodeName)
-                return &node;
-        }
+    engineTable["getNode"] = [this](const std::string& nodeName) -> SceneNode* {
+        if (!activeNodes) return nullptr;
+        for (auto& node : *activeNodes)
+            if (node.name == nodeName) return &node;
         return nullptr;
     };
 
-    engineTable["destroyNode"] = [this](const std::string &nodeName) {
-        if (!activeNodes)
-            return;
+    engineTable["destroyNode"] = [this](const std::string& nodeName) {
+        if (!activeNodes) return;
         for (auto it = activeNodes->begin(); it != activeNodes->end(); ++it)
         {
             if (it->name == nodeName)
@@ -73,70 +87,56 @@ void LuaEngine::init()
     lua.open_libraries(sol::lib::base, sol::lib::package, sol::lib::math);
 
     lua["print"] = [](sol::variadic_args args) {
-        std::string full_msg = "";
+        std::string full_msg;
         for (auto v : args)
-        {
-            std::string s = v.as<std::string>();
-            full_msg += s + " ";
-        }
-
+            full_msg += v.as<std::string>() + " ";
         Output::addLog(full_msg);
     };
 
     sol::table inputTable = lua.create_table();
-    inputTable["isKeyDown"] = [](const std::string &key) -> bool {
-        const bool *state = SDL_GetKeyboardState(NULL);
-        SDL_Scancode scancode = SDL_GetScancodeFromName(key.c_str());
-        return state[scancode] != 0;
+
+    inputTable["isKeyDown"] = [](const std::string& key) -> bool {
+        const bool* state = SDL_GetKeyboardState(nullptr);
+        SDL_Scancode sc = SDL_GetScancodeFromName(key.c_str());
+        return sc != SDL_SCANCODE_UNKNOWN && state[sc] != 0;
     };
 
     inputTable["anyKey"] = []() -> bool {
-        const bool *state = SDL_GetKeyboardState(NULL);
+        const bool* state = SDL_GetKeyboardState(nullptr);
         for (int i = 0; i < SDL_SCANCODE_COUNT; ++i)
-        {
-            if (state[i])
-            {
-                return true;
-            }
-        }
+            if (state[i]) return true;
         return false;
     };
 
     inputTable["getKeyPressed"] = []() -> std::string {
-        const bool *state = SDL_GetKeyboardState(NULL);
-        for (int i = 0; i < 512; ++i)
+        const bool* state = SDL_GetKeyboardState(nullptr);
+        for (int i = 0; i < SDL_SCANCODE_COUNT; ++i)
         {
             if (state[i])
             {
-                const char *name = SDL_GetScancodeName((SDL_Scancode)i);
-                if (name)
-                    return std::string(name);
+                const char* name = SDL_GetScancodeName(static_cast<SDL_Scancode>(i));
+                if (name && name[0] != '\0') return name;
             }
         }
         return "";
     };
 
     inputTable["getMouseX"] = []() -> float {
-        float x, y;
-        SDL_GetMouseState(&x, &y);
-        return x;
+        float x, y; SDL_GetMouseState(&x, &y); return x;
     };
 
     inputTable["getMouseY"] = []() -> float {
-        float x, y;
-        SDL_GetMouseState(&x, &y);
-        return y;
+        float x, y; SDL_GetMouseState(&x, &y); return y;
     };
 
     inputTable["isMouseDown"] = [](int buttonIndex) -> bool {
-        Uint32 state = SDL_GetMouseState(NULL, NULL);
-        return (state & SDL_BUTTON_MASK(buttonIndex)) != 0;
+        return (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON_MASK(buttonIndex)) != 0;
     };
 
     lua["Input"] = inputTable;
 }
 
-void LuaEngine::runScript(const std::string &code)
+void LuaEngine::runScript(const std::string& code)
 {
     sol::environment env(lua, sol::create, lua.globals());
     m_environments.push_back(env);
@@ -160,92 +160,89 @@ void LuaEngine::runScript(const std::string &code)
         return;
     }
 
-    sol::protected_function onStart = env["onStart"];
+    sol::protected_function onStart  = env["onStart"];
     sol::protected_function onUpdate = env["onUpdate"];
 
-    if (onStart.valid())
-        m_startFuncs.push_back(onStart);
-    if (onUpdate.valid())
-        m_updateFuncs.push_back(onUpdate);
+    if (onStart.valid())  m_startFuncs.push_back(onStart);
+    if (onUpdate.valid()) m_updateFuncs.push_back(onUpdate);
 
     if (isRunning && onStart.valid())
     {
-        auto result = onStart();
-
-        if (!result.valid())
+        try
         {
-            sol::error err = result;
-            Output::addLog("LUA RUNTIME ERROR (onStart): " + std::string(err.what()));
+            auto result = onStart();
+            if (!result.valid())
+            {
+                sol::error err = result;
+                Output::addLog("LUA RUNTIME ERROR (onStart): " + std::string(err.what()));
+            }
+        }
+        catch (const std::exception& e)
+        {
+            Output::addLog("[ENGINE FATAL BINDING EXCEPTION]: " + std::string(e.what()));
         }
     }
 }
 
 void LuaEngine::step()
 {
-    if (m_updateFuncs.empty())
+    if (!isRunning || m_updateFuncs.empty())
         return;
 
-    for (auto &updateFunc : m_updateFuncs)
+    for (size_t i = 0; i < m_updateFuncs.size(); ++i)
     {
-        auto result = updateFunc();
+        if (!m_updateFuncs[i].valid())
+            continue;
+
+        auto result = m_updateFuncs[i]();
         if (!result.valid())
         {
             sol::error err = result;
             sol::call_status status = result.status();
 
             if (status == sol::call_status::runtime)
-            {
                 Output::addLog("[USER SCRIPT ERROR] " + std::string(err.what()));
-            }
             else
-            {
                 Output::addLog("[ENGINE BINDING ERROR] C++ failed to execute: " + std::string(err.what()));
-            }
 
             isRunning = false;
             stop();
+            return;
         }
     }
 }
 
 void LuaEngine::stop()
 {
-    if (luaOnEnd.valid())
-    {
-        luaOnEnd();
+    if (!isRunning && m_startFuncs.empty() && m_updateFuncs.empty())
+        return;
 
-        sol::protected_function_result result = luaOnEnd();
-
-        if (!result.valid())
-        {
-            sol::error err = result;
-            Output::addLog("LUA RUNTIME ERROR (End): " + std::string(err.what()));
-
-            isRunning = false;
-            stop();
-        }
-    }
+    isRunning = false;
 
     m_startFuncs.clear();
     m_updateFuncs.clear();
     m_environments.clear();
-    isRunning = false;
+
+    lua = sol::state{}; 
 }
 
-void LuaEngine::runAllScriptsInFolder(const std::string &folderPath)
+void LuaEngine::runAllScriptsInFolder(const std::string& folderPath)
 {
-    for (const auto &entry : std::filesystem::recursive_directory_iterator(folderPath))
+    m_startFuncs.clear();
+    m_updateFuncs.clear();
+    m_environments.clear();
+
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(folderPath))
     {
-        if (entry.path().extension() == ".lua")
-        {
-            std::ifstream ifs(entry.path());
-            if (ifs.is_open())
-            {
-                std::string code{(std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>())};
-                runScript(code);
-                ifs.close();
-            }
-        }
+        if (entry.path().extension() != ".lua") continue;
+
+        std::ifstream ifs(entry.path());
+        if (!ifs.is_open()) continue;
+
+        std::string code{ std::istreambuf_iterator<char>(ifs),
+                          std::istreambuf_iterator<char>() };
+        runScript(code);
     }
 }
+
 } // namespace Flux

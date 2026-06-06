@@ -63,7 +63,7 @@ Thanks to these libraries that got me this far:
 - [ImGuizmo](https://github.com/cedricguillemet/imguizmo) - Manipulate objects directly in the viewport
 - [LinuxDeploy](https://github.com/linuxdeploy/linuxdeploy) - Used to make and distribute AppImages for Linux
 - [ImGuiColorTextEdit](https://github.com/BalazsJako/ImGuiColorTextEdit) - Credits to BalazsJako for making this, ImGuiColorTextEdit is now the foundation of the text editor and has solved one of the big problems making this project.
-- [LuaJIT](https://luajit.org/) - For running the Lua scripts
+- [LuaJIT](https://luajit.org/) - The engine for running the Lua scripts
 - [sol2](https://github.com/ThePhd/sol2) - For making the API and wraps for Lua
 - [nlohmann-json](https://github.com/nlohmann/json) - For JSON handling and persistent saving
 - [Jolt Physics](https://github.com/jrouwe/joltphysics) - For physics and collisions
