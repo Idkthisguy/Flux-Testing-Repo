@@ -39,9 +39,17 @@ namespace Flux {
 
 	class Ribbon;
 
-	class Explorer {
+	class Assets {
 	public:
 		void renderExplorer(Viewport& viewport);
+		void TriggerCreateNewProject();
+		void TriggerOpenProject();
+		void TriggerSaveScene();
+		void TriggerSaveSceneAs();
+		void TriggerOpenScene();
+
+		std::filesystem::path selectedAssetPath;
+		void syncFiles(const std::filesystem::path& path, virtualFile& node);
 
 		bool refreshRequested = false;
 		std::filesystem::path refreshPath;
@@ -67,7 +75,10 @@ namespace Flux {
 
 	private:
 		void DrawVirtualNodes(virtualFile& file);
-		void syncFiles(const std::filesystem::path& path, virtualFile& node);
+		void DrawFolderTree(virtualFile& file);
+		void DrawAssetIcon(ImDrawList* drawList, ImVec2 pos, ImVec2 size, fileType type, unsigned int texID);
+		virtualFile* FindFolderNode(virtualFile* current, const std::filesystem::path& path);
+		
 		void copyTemplateItem(const std::string& folderType,
 							  const std::string& templateName,
 							  const std::string& targetBaseName,

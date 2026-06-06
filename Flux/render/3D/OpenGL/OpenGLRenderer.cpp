@@ -175,7 +175,7 @@ void Renderer3D::DrawDepthPass(const std::vector<SceneNode> &nodes, glm::vec3 li
 
 void Renderer3D::DrawScene(Model &model, unsigned int overrideTexID, glm::mat4 modelMatrix, glm::mat4 view,
                            glm::mat4 proj, glm::vec3 cameraPos, const std::vector<SceneNode> &lights, float alpha,
-                           float roughness, float metallic, float timeOfDay, glm::vec3 baseColor)
+                           float roughness, float metallic, float timeOfDay, glm::vec3 baseColor, glm::vec2 textureScale, bool pixelated)
 {
     glUseProgram(shaderProgram);
 
@@ -202,6 +202,7 @@ void Renderer3D::DrawScene(Model &model, unsigned int overrideTexID, glm::mat4 m
     set1f(shaderProgram, "metallic", metallic);
     set1f(shaderProgram, "timeOfDay", timeOfDay);
     set1i(shaderProgram, "isSelected", isSelected ? 1 : 0);
+    glUniform2f(glGetUniformLocation(shaderProgram, "textureScale"), textureScale.x, textureScale.y);
 
     glm::mat3 nm = glm::mat3(glm::transpose(glm::inverse(modelMatrix)));
     setMat3(shaderProgram, "normalMatrix", nm);
@@ -339,6 +340,17 @@ void Renderer3D::DrawScene(Model &model, unsigned int overrideTexID, glm::mat4 m
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, overrideTexID);
             set1i(shaderProgram, "albedoMap", 0);
+
+            if (pixelated)
+            {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            }
+            else
+            {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            }
 
             set3f(shaderProgram, "matColor", glm::vec3(1.0f));
         }

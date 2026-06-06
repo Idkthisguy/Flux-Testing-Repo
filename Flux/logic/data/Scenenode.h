@@ -64,6 +64,8 @@ namespace Flux {
         float roughness = 0.7f;
         float metallic  = 0.0f;
         glm::vec3 baseColor = glm::vec3(0.8f, 0.8f, 0.8f);
+        glm::vec2 textureScale = glm::vec2(1.0f, 1.0f);
+        bool pixelated = false;
 
         int              parentIndex = -1;
         std::vector<int> children;

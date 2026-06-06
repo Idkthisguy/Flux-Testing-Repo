@@ -27,6 +27,7 @@
 #include <dwmapi.h>
 
 namespace Flux {
+    void SetStalkerTheme();
     class Window {
     public:
         Window(int width, int height, const std::string& title);
@@ -52,7 +53,7 @@ namespace Flux {
         std::string m_title;
 
         Viewport   m_viewport;
-        Explorer   m_explorer;
+        Assets     m_explorer;
         Ribbon     m_ribbon;
         Output     m_output;
         Properties m_properties;

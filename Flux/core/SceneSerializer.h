@@ -39,6 +39,8 @@ class SceneSerializer
             {
                 n["modelPath"] = std::filesystem::relative(node.model->path, projectRoot).string();
             }
+            n["textureScale"] = {node.textureScale.x, node.textureScale.y};
+            n["pixelated"] = node.pixelated;
 
             n["baseColor"] = {node.baseColor.r, node.baseColor.g, node.baseColor.b};
 
@@ -160,6 +162,17 @@ class SceneSerializer
                 n.textureID = id;
             }
 
+            if (jNode.contains("textureScale") && jNode["textureScale"].is_array() && jNode["textureScale"].size() == 2)
+            {
+                n.textureScale = glm::vec2(jNode["textureScale"][0].get<float>(), jNode["textureScale"][1].get<float>());
+            }
+            else
+            {
+                n.textureScale = glm::vec2(1.0f, 1.0f);
+            }
+
+            n.pixelated = jNode.value("pixelated", false);
+
             if (n.type == NodeType::Camera && !jNode.contains("fov"))
                 n.fov = 70.0f;
 
@@ -197,6 +210,8 @@ class SceneSerializer
             }
             h.nodes.push_back(n);
         }
+        h.undoStack.clear();
+        h.redoStack.clear();
     }
 };
 } // namespace Flux

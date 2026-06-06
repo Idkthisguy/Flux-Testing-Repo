@@ -70,6 +70,12 @@ glm::vec3 Viewport::RaycastToGroundPlane(ImVec2 mousePos, ImVec2 imagePos, ImVec
 
 void Viewport::HandleObjectSelection(ImVec2 mousePos, ImVec2 sz, glm::mat4 proj, glm::mat4 view, Heiarchy &heiarchy)
 {
+    int best = GetNodeUnderMouse(mousePos, sz, proj, view, heiarchy);
+    heiarchy.selectedIndex = (best == heiarchy.selectedIndex) ? -1 : best;
+}
+
+int Viewport::GetNodeUnderMouse(ImVec2 mousePos, ImVec2 sz, glm::mat4 proj, glm::mat4 view, Heiarchy &heiarchy)
+{
     float ndcX = (2.f * mousePos.x) / sz.x - 1.f;
     float ndcY = 1.f - (2.f * mousePos.y) / sz.y;
     glm::vec4 rayClip(ndcX, ndcY, -1.f, 1.f);
@@ -79,7 +85,6 @@ void Viewport::HandleObjectSelection(ImVec2 mousePos, ImVec2 sz, glm::mat4 proj,
     glm::vec3 ro = camera->Position;
 
     int best = -1;
-
     float bestT = std::numeric_limits<float>::max();
 
     for (int i = 0; i < (int)heiarchy.nodes.size(); i++)
@@ -99,8 +104,7 @@ void Viewport::HandleObjectSelection(ImVec2 mousePos, ImVec2 sz, glm::mat4 proj,
             best = i;
         }
     }
-
-    heiarchy.selectedIndex = (best == heiarchy.selectedIndex) ? -1 : best;
+    return best;
 }
 
 static ImVec2 WorldToScreen(glm::vec3 worldPos, glm::mat4 view, glm::mat4 proj, ImVec2 imagePos, ImVec2 sz)
@@ -253,6 +257,7 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
         int sel = heiarchy.selectedIndex;
         if (sel >= 0 && sel < (int)heiarchy.nodes.size() && !heiarchy.nodes[sel].isLightingNode)
         {
+            heiarchy.PushUndoState();
             heiarchy.nodes.erase(heiarchy.nodes.begin() + sel);
             heiarchy.selectedIndex = std::min(sel, (int)heiarchy.nodes.size() - 1);
         }
@@ -310,7 +315,7 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
         if (node.type == NodeType::Camera)
             continue;
         renderer->DrawScene(*node.model, node.textureID, node.GetTransformMatrix(), view, proj, camera->Position,
-                            heiarchy.nodes, 1.0f, node.roughness, node.metallic, timeOfDay, node.baseColor);
+                            heiarchy.nodes, 1.0f, node.roughness, node.metallic, timeOfDay, node.baseColor, node.textureScale, node.pixelated);
     }
 
     if (isDraggingModel && ghostModel)
@@ -407,6 +412,7 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
                     ghostPos = RaycastToGroundPlane(mousePos, imagePos, sz, proj, view);
                     if (p->IsDelivery())
                     {
+                        heiarchy.PushUndoState();
                         SceneNode n;
                         n.type = NodeType::Mesh;
                         n.model = ghostModel;
@@ -424,13 +430,26 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
                 {
                     if (p->IsDelivery())
                     {
-                        int sel = heiarchy.selectedIndex;
-                        if (sel >= 0 && sel < (int)heiarchy.nodes.size() && heiarchy.nodes[sel].type == NodeType::Mesh)
+                        int hoveredIndex = GetNodeUnderMouse(mouseInCanvas, sz, proj, view, heiarchy);
+                        if (hoveredIndex >= 0 && hoveredIndex < (int)heiarchy.nodes.size() && heiarchy.nodes[hoveredIndex].type == NodeType::Mesh)
                         {
-                            heiarchy.nodes[sel].texturePath = path;
-                            heiarchy.nodes[sel].textureID = TextureLoader::Load(path);
-                            if (heiarchy.nodes[sel].model)
-                                heiarchy.nodes[sel].model->SetTexture(heiarchy.nodes[sel].textureID);
+                            heiarchy.PushUndoState();
+                            heiarchy.nodes[hoveredIndex].texturePath = path;
+                            heiarchy.nodes[hoveredIndex].textureID = TextureLoader::Load(path);
+                            if (heiarchy.nodes[hoveredIndex].model)
+                                heiarchy.nodes[hoveredIndex].model->SetTexture(heiarchy.nodes[hoveredIndex].textureID);
+                        }
+                        else
+                        {
+                            int sel = heiarchy.selectedIndex;
+                            if (sel >= 0 && sel < (int)heiarchy.nodes.size() && heiarchy.nodes[sel].type == NodeType::Mesh)
+                            {
+                                heiarchy.PushUndoState();
+                                heiarchy.nodes[sel].texturePath = path;
+                                heiarchy.nodes[sel].textureID = TextureLoader::Load(path);
+                                if (heiarchy.nodes[sel].model)
+                                    heiarchy.nodes[sel].model->SetTexture(heiarchy.nodes[sel].textureID);
+                            }
                         }
                     }
                 }
@@ -469,8 +488,14 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
             ImGuizmo::AllowAxisFlip(false);
             ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), op, ImGuizmo::LOCAL, glm::value_ptr(mm));
 
+            static bool wasUsingGizmo = false;
             if (ImGuizmo::IsUsing())
             {
+                if (!wasUsingGizmo)
+                {
+                    heiarchy.PushUndoState();
+                    wasUsingGizmo = true;
+                }
                 float t[3], r[3], s[3];
                 ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(mm), t, r, s);
                 target.position = {t[0], t[1], t[2]};
@@ -490,6 +515,10 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
                                   glm::angleAxis(glm::radians(roll), glm::vec3(0, 0, 1));
                     target.light.direction = glm::normalize(q * glm::vec3(0.f, -1.f, 0.f));
                 }
+            }
+            else
+            {
+                wasUsingGizmo = false;
             }
         }
 

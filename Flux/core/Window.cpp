@@ -12,6 +12,106 @@
 
 namespace Flux
 {
+void SetStalkerTheme()
+{
+    ImGuiStyle& style = ImGui::GetStyle();
+
+    // Call StyleColorsDark first as Aurora's parent theme
+    ImGui::StyleColorsDark(&style);
+
+    // Apply Aurora Sizing Variables (from Style.hpp)
+    style.WindowPadding = ImVec2(10.0f, 10.0f);
+    style.FramePadding = ImVec2(20.0f, 8.0f);
+    style.ItemSpacing = ImVec2(20.0f, 8.0f);
+    style.ScrollbarSize = 17.0f;
+    style.ScrollbarRounding = 12.0f;
+    style.FrameRounding = 8.0f;
+    style.GrabRounding = 8.0f;
+    style.TabRounding = 8.0f;
+
+    // Set other roundings to follow the 8.0f standard
+    style.WindowRounding = 8.0f;
+    style.ChildRounding = 0.0f;
+    style.PopupRounding = 8.0f;
+
+    // Apply Border Sizes
+    style.WindowBorderSize = 1.0f;
+    style.ChildBorderSize = 1.0f;
+    style.PopupBorderSize = 1.0f;
+    style.FrameBorderSize = 1.0f;
+    style.TabBorderSize = 1.0f;
+
+    // Aurora Theme Colors
+    ImVec4 s_MainBgLight0 = ImVec4(0.404f, 0.404f, 0.404f, 1.0f);
+    ImVec4 s_MainBg      = ImVec4(0.21f, 0.21f, 0.21f, 1.0f);
+    ImVec4 s_MainBgDark0  = ImVec4(0.190f, 0.190f, 0.190f, 1.0f);
+    ImVec4 s_MainBgDark1  = ImVec4(0.145f, 0.145f, 0.145f, 1.0f);
+    ImVec4 s_MainBgDark2  = ImVec4(0.098f, 0.098f, 0.098f, 1.0f);
+
+    ImVec4 s_Accent      = ImVec4(0.149f, 0.149f, 0.149f, 1.0f);
+    ImVec4 s_AccentDark0 = ImVec4(0.102f, 0.102f, 0.102f, 1.0f);
+    ImVec4 s_AccentDark1 = ImVec4(0.063f, 0.063f, 0.063f, 1.0f);
+
+    ImVec4 s_Button      = ImVec4(0.882f, 0.882f, 0.882f, 1.0f);
+    ImVec4 s_ButtonHovered = ImVec4(0.782f, 0.782f, 0.782f, 1.0f);
+
+    ImVec4 s_Header      = ImVec4(0.338f, 0.338f, 0.338f, 1.0f);
+    ImVec4 s_HeaderHovered = ImVec4(0.276f, 0.276f, 0.276f, 1.0f);
+    ImVec4 s_HeaderActive  = ImVec4(0.379f, 0.379f, 0.379f, 1.0f);
+
+    ImVec4 s_Font        = ImVec4(0.902f, 0.902f, 0.902f, 1.0f);
+    ImVec4 s_FontDisabled = ImVec4(0.36f, 0.36f, 0.36f, 1.0f);
+    ImVec4 s_HighlightColor = ImVec4(0.145f, 0.553f, 0.384f, 1.0f);
+
+    ImVec4* colors = style.Colors;
+
+    colors[ImGuiCol_WindowBg]             = s_MainBg;
+    colors[ImGuiCol_ChildBg]              = s_MainBg;
+
+    colors[ImGuiCol_Text]                 = s_Font;
+    colors[ImGuiCol_TextDisabled]         = s_FontDisabled;
+    colors[ImGuiCol_TextSelectedBg]       = s_HighlightColor;
+
+    colors[ImGuiCol_FrameBg]              = s_MainBgDark1;
+    colors[ImGuiCol_FrameBgHovered]       = s_MainBgDark0;
+    colors[ImGuiCol_FrameBgActive]        = s_MainBgDark2;
+
+    colors[ImGuiCol_TitleBg]              = s_MainBgDark0;
+    colors[ImGuiCol_TitleBgCollapsed]     = s_MainBgDark0;
+    colors[ImGuiCol_TitleBgActive]        = s_MainBgDark0;
+    colors[ImGuiCol_MenuBarBg]            = s_AccentDark0;
+
+    colors[ImGuiCol_Tab]                  = s_MainBgDark0;
+    colors[ImGuiCol_TabUnfocused]         = s_MainBgDark0;
+    colors[ImGuiCol_TabHovered]           = s_MainBgDark1;
+    colors[ImGuiCol_TabActive]            = s_MainBgDark1;
+    colors[ImGuiCol_TabUnfocusedActive]   = s_MainBgDark1;
+
+    colors[ImGuiCol_ScrollbarBg]          = s_MainBgDark1;
+    colors[ImGuiCol_ScrollbarGrab]        = s_Font;
+    colors[ImGuiCol_ScrollbarGrabActive]  = s_FontDisabled;
+    colors[ImGuiCol_ScrollbarGrabHovered] = s_FontDisabled;
+    colors[ImGuiCol_CheckMark]            = s_Font;
+    colors[ImGuiCol_SliderGrab]           = s_Font;
+    colors[ImGuiCol_SliderGrabActive]     = s_FontDisabled;
+
+    colors[ImGuiCol_Header]               = s_Header;
+    colors[ImGuiCol_HeaderHovered]        = s_HeaderHovered;
+    colors[ImGuiCol_HeaderActive]         = s_HeaderActive;
+
+    colors[ImGuiCol_Separator]            = s_MainBgLight0;
+    colors[ImGuiCol_SeparatorHovered]     = s_MainBgLight0;
+    colors[ImGuiCol_SeparatorActive]      = s_MainBgLight0;
+    colors[ImGuiCol_Border]               = s_MainBgLight0;
+
+    colors[ImGuiCol_ResizeGrip]           = s_MainBg;
+    colors[ImGuiCol_ResizeGripHovered]    = s_MainBg;
+    colors[ImGuiCol_ResizeGripActive]     = s_MainBg;
+
+    colors[ImGuiCol_DockingPreview]       = s_AccentDark0;
+    colors[ImGuiCol_NavHighlight]         = s_AccentDark0;
+}
+
 Window::Window(int width, int height, const std::string &title) : m_width(width), m_height(height), m_title(title)
 {
     if (!SDL_Init(SDL_INIT_VIDEO))
@@ -142,9 +242,92 @@ Window::Window(int width, int height, const std::string &title) : m_width(width)
     ImGui_ImplSDL3_InitForOpenGL(m_window, m_glContext);
     ImGui_ImplOpenGL3_Init("#version 410");
 
+    SetStalkerTheme();
+
     m_viewport.Init();
     m_heiarchy.setup();
     m_luaEngine.init();
+
+    // Auto-load last project or fallback to default UntitledProject
+    std::filesystem::path projectToLoad = m_ribbon.lastProjectPath;
+    if (projectToLoad.empty() || !std::filesystem::exists(projectToLoad))
+    {
+        const char* home = std::getenv("HOME");
+        if (!home) home = std::getenv("USERPROFILE");
+        if (home)
+        {
+            std::filesystem::path defaultProj = std::filesystem::path(home) / "FluxProjects" / "UntitledProject";
+            std::filesystem::create_directories(defaultProj);
+            
+            // Copy template if empty or doesn't exist
+            std::filesystem::path templatePath = PathHelper::GetAssetPath("templates/Project_Templates/base_game_folder_lua");
+            if (std::filesystem::exists(templatePath))
+            {
+                try {
+                    for (const auto& entry : std::filesystem::recursive_directory_iterator(templatePath)) {
+                        const auto& path = entry.path();
+                        auto relative = std::filesystem::relative(path, templatePath);
+                        auto dest = defaultProj / relative;
+                        if (entry.is_directory()) {
+                            std::filesystem::create_directories(dest);
+                        } else {
+                            if (!std::filesystem::exists(dest)) {
+                                std::filesystem::copy_file(path, dest);
+                            }
+                        }
+                    }
+                } catch (const std::exception& e) {
+                    std::cerr << "Failed to copy default templates: " << e.what() << std::endl;
+                }
+            }
+            
+            // Create UntitledProject.flux project file if not exists
+            std::filesystem::path projFile = defaultProj / "UntitledProject.flux";
+            if (!std::filesystem::exists(projFile))
+            {
+                nlohmann::json pj;
+                pj["projectName"] = "UntitledProject";
+                pj["startupScene"] = "scene.fscn";
+                pj["currentScene"] = "scene.fscn";
+                std::ofstream(projFile) << pj.dump(4);
+            }
+            
+            // Save default scene to UntitledProject/scene.fscn if not exists
+            std::filesystem::path scenePath = defaultProj / "scene.fscn";
+            if (!std::filesystem::exists(scenePath))
+            {
+                SceneSerializer::Save(m_heiarchy, scenePath.string(), defaultProj);
+            }
+            
+            projectToLoad = defaultProj;
+        }
+    }
+    
+    if (!projectToLoad.empty() && std::filesystem::exists(projectToLoad))
+    {
+        m_explorer.activeFolderPath = projectToLoad;
+        m_explorer.projectRoot.path = projectToLoad;
+        m_explorer.projectRoot.name = projectToLoad.filename().string();
+        m_explorer.syncFiles(projectToLoad, m_explorer.projectRoot);
+        m_explorer.scanForBackups();
+        
+        m_viewport.activeProjectPath = projectToLoad;
+        m_ribbon.lastProjectPath = projectToLoad.string();
+        m_ribbon.SavePreferences();
+        
+        // Load the scene saved in project settings or default to scene.fscn / main.fscn
+        m_ribbon.LoadProjectSettings(projectToLoad);
+        std::string sceneName = std::strlen(m_ribbon.projectSettings.currentScene) > 0 ? m_ribbon.projectSettings.currentScene : "scene.fscn";
+        std::filesystem::path scenePath = sceneName;
+        if (!scenePath.is_absolute())
+        {
+            scenePath = projectToLoad / scenePath;
+        }
+        if (std::filesystem::exists(scenePath))
+        {
+            SceneSerializer::Load(m_heiarchy, scenePath, projectToLoad);
+        }
+    }
 }
 
 Window::~Window()
@@ -244,6 +427,43 @@ void Window::update()
                 m_pendingStop = true;
             }
             break;
+        case SDL_EVENT_DROP_FILE:
+            if (!m_explorer.activeFolderPath.empty())
+            {
+                std::filesystem::path srcPath(event.drop.data);
+                std::string ext = srcPath.extension().string();
+                std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+                std::filesystem::path destFolder = m_explorer.activeFolderPath;
+                if (ext == ".obj" || ext == ".fbx")
+                    destFolder /= "models";
+                else if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".tga")
+                    destFolder /= "textures";
+
+                std::filesystem::create_directories(destFolder);
+                std::filesystem::path destPath = destFolder / srcPath.filename();
+                try
+                {
+                    std::filesystem::copy_file(srcPath, destPath, std::filesystem::copy_options::overwrite_existing);
+                    if (ext == ".obj")
+                    {
+                        std::filesystem::path mtlSrc = srcPath;
+                        mtlSrc.replace_extension(".mtl");
+                        if (std::filesystem::exists(mtlSrc))
+                        {
+                            std::filesystem::path mtlDest = destFolder / mtlSrc.filename();
+                            std::filesystem::copy_file(mtlSrc, mtlDest, std::filesystem::copy_options::overwrite_existing);
+                        }
+                    }
+                    m_explorer.refreshRequested = true;
+                    Output::addLog("Imported asset: " + srcPath.filename().string());
+                }
+                catch (const std::exception &e)
+                {
+                    Output::addLog("Import failed: " + std::string(e.what()));
+                }
+            }
+            break;
         }
     }
 
@@ -264,9 +484,9 @@ void Window::update()
     ImGuiViewport *viewport = ImGui::GetMainViewport();
 
     ImVec2 dockPos = viewport->Pos;
-    dockPos.y += 55.0f;
+    dockPos.y += 75.0f;
     ImVec2 dockSize = viewport->Size;
-    dockSize.y -= 55.0f;
+    dockSize.y -= 100.0f; // 75.0f (ribbon) + 25.0f (status bar)
 
     static bool firstTime = true;
     ImGuiID dockspace_id = ImGui::GetID("MainDockSpace");
@@ -280,6 +500,8 @@ void Window::update()
                                   ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus |
                                   ImGuiWindowFlags_NoBackground;
 
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::Begin("MainDockHost", nullptr, host_flags);
     ImGui::DockSpace(dockspace_id, ImVec2(0.f, 0.f), ImGuiDockNodeFlags_None);
 
@@ -291,29 +513,55 @@ void Window::update()
         ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
         ImGui::DockBuilderSetNodeSize(dockspace_id, dockSize);
 
-        ImGuiID dock_id_left, dock_id_right, dock_id_bottom, dock_id_bottomRight, dock_id_bottomLeft, dock_id_center = dockspace_id;
+        ImGuiID dock_id_left, dock_id_right, dock_id_bottom, dock_id_center = dockspace_id;
 
-        dock_id_bottom = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Down, 0.25f, nullptr, &dock_id_center);
+        dock_id_bottom = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Down, 0.30f, nullptr, &dock_id_center);
         dock_id_left = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Left, 0.20f, nullptr, &dock_id_center);
-        dock_id_right = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.30f, nullptr, &dock_id_center);
-        dock_id_bottomRight = ImGui::DockBuilderSplitNode(dock_id_right, ImGuiDir_Down, 0.5f, nullptr, &dock_id_right);
-        dock_id_bottomLeft = ImGui::DockBuilderSplitNode(dock_id_left, ImGuiDir_Down, 0.5f, nullptr, &dock_id_left);
+        dock_id_right = ImGui::DockBuilderSplitNode(dock_id_center, ImGuiDir_Right, 0.25f, nullptr, &dock_id_center);
 
         ImGui::DockBuilderDockWindow("Viewport", dock_id_center);
         ImGui::DockBuilderDockWindow("###UniqueEditorID", dock_id_center);
-        ImGui::DockBuilderDockWindow("Explorer", dock_id_right);
-        ImGui::DockBuilderDockWindow("Output", dock_id_bottom);
-        ImGui::DockBuilderDockWindow("Properties", dock_id_bottomLeft);
-        ImGui::DockBuilderDockWindow("Heiarchy", dock_id_left);
+        ImGui::DockBuilderDockWindow("Scene", dock_id_left);
+        ImGui::DockBuilderDockWindow("Properties", dock_id_right);
+        ImGui::DockBuilderDockWindow("Assets", dock_id_bottom);
+        ImGui::DockBuilderDockWindow("Console", dock_id_bottom);
         ImGui::DockBuilderFinish(dockspace_id);
     }
     ImGui::End();
+    ImGui::PopStyleVar(2);
 
     if (m_luaEngine.isRunning)
         m_luaEngine.step();
 
     m_ribbon.renderRibbon();
     m_explorer.renderExplorer(m_viewport);
+
+    // Bottom Status Bar
+    {
+        ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(ImVec2(main_viewport->Pos.x, main_viewport->Pos.y + main_viewport->Size.y - 25.0f));
+        ImGui::SetNextWindowSize(ImVec2(main_viewport->Size.x, 25.0f));
+        ImGuiWindowFlags status_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+                                        ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoFocusOnAppearing;
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 4.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::GetStyleColorVec4(ImGuiCol_MenuBarBg));
+        
+        ImGui::Begin("###StatusBar", nullptr, status_flags);
+        ImGui::Text("Flux Engine | Version 0.1.0");
+        if (!m_explorer.activeFolderPath.empty()) {
+            ImGui::SameLine();
+            ImGui::TextDisabled(" | Project: %s", m_explorer.activeFolderPath.filename().string().c_str());
+        }
+        ImGui::SameLine(main_viewport->Size.x - 30.0f);
+        if (ImGui::Button("?", ImVec2(20.0f, 17.0f))) {
+            Output::addLog("Flux Engine - Help: Use WASD + Mouse Right-Click to fly. Drag assets from the Assets panel into the scene to load them.");
+        }
+        ImGui::End();
+        
+        ImGui::PopStyleColor();
+        ImGui::PopStyleVar(2);
+    }
 
     static std::filesystem::path lastLoadedProject;
     if (m_explorer.activeFolderPath != lastLoadedProject && !m_explorer.activeFolderPath.empty())
@@ -322,28 +570,17 @@ void Window::update()
         m_ribbon.LoadProjectSettings(m_explorer.activeFolderPath);
     }
 
-    if (!m_explorer.activeFolderPath.empty())
-    {
-        if (m_ribbon.editorLocked)
-            ImGui::BeginDisabled(true);
+    m_viewport.activeProjectPath = m_explorer.activeFolderPath;
 
-        m_viewport.RenderViewport(m_heiarchy);
-        m_properties.renderProperties(&m_heiarchy);
-        m_heiarchy.renderHeiarchy(m_viewport.activeProjectPath);
+    if (m_ribbon.editorLocked)
+        ImGui::BeginDisabled(true);
 
-        if (m_ribbon.editorLocked)
-            ImGui::EndDisabled();
+    m_viewport.RenderViewport(m_heiarchy);
+    m_properties.renderProperties(&m_heiarchy);
+    m_heiarchy.renderHeiarchy(m_viewport.activeProjectPath);
 
-        ImGuiIO &io = ImGui::GetIO();
-    }
-    else
-    {
-        ImGui::Begin("Viewport");
-        ImGui::SetWindowFontScale(2.0f);
-        ImGui::Text("No project loaded. Please Open or Create a project in the Explorer.");
-        ImGui::SetWindowFontScale(1.0f);
-        ImGui::End();
-    }
+    if (m_ribbon.editorLocked)
+        ImGui::EndDisabled();
 
     if (m_ribbon.playToggledFrame)
     {
@@ -396,11 +633,20 @@ void Window::update()
         SDL_StopTextInput(m_window);
     }
 
-    if (!isTextEditorFocused && io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S) && !m_ribbon.editorLocked)
+    if (!isTextEditorFocused && !m_ribbon.editorLocked)
     {
-        std::string scenePath = m_explorer.activeFolderPath.string() + "/scene.fscn";
-        m_sceneSerializer.Save(m_heiarchy, scenePath, m_explorer.activeFolderPath);
-        Output::addLog("Scene saved to " + scenePath);
+        if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S))
+        {
+            m_ribbon.TriggerSaveScene();
+        }
+        else if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z))
+        {
+            m_heiarchy.Undo();
+        }
+        else if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y))
+        {
+            m_heiarchy.Redo();
+        }
     }
 
     ImGui::Render();

@@ -313,6 +313,9 @@ void Runtime::Update()
         }
     }
 
+    glm::vec3 activeCamPos = cameraPos;
+    bool cameraFound = false;
+
     for (auto &node : m_gameNodes)
     {
         if (node.type == NodeType::Camera && node.isMainCamera)
@@ -325,7 +328,30 @@ void Runtime::Update()
             view = glm::lookAt(camPos, camPos + camFront, camUp);
             proj =
                 glm::perspective(glm::radians(node.fov > 0.f ? node.fov : 70.0f), (float)w / (float)h, 0.1f, 2000.0f);
+            activeCamPos = camPos;
+            cameraFound = true;
             break;
+        }
+    }
+
+    if (!cameraFound)
+    {
+        for (auto &node : m_gameNodes)
+        {
+            if (node.type == NodeType::Camera)
+            {
+                glm::mat4 transform = node.GetTransformMatrix();
+                glm::vec3 camPos = node.position;
+                glm::vec3 camFront = glm::normalize(glm::vec3(transform * glm::vec4(0, 0, -1, 0)));
+                glm::vec3 camUp = glm::normalize(glm::vec3(transform * glm::vec4(0, 1, 0, 0)));
+
+                view = glm::lookAt(camPos, camPos + camFront, camUp);
+                proj =
+                    glm::perspective(glm::radians(node.fov > 0.f ? node.fov : 70.0f), (float)w / (float)h, 0.1f, 2000.0f);
+                activeCamPos = camPos;
+                cameraFound = true;
+                break;
+            }
         }
     }
 
@@ -336,8 +362,8 @@ void Runtime::Update()
         if (node.model)
         {
             glm::mat4 modelMat = node.GetTransformMatrix();
-            m_renderer.DrawScene(*node.model, node.textureID, modelMat, view, proj, cameraPos, m_gameNodes, 1.0f,
-                                 node.roughness, node.metallic, gameTime, node.baseColor);
+            m_renderer.DrawScene(*node.model, node.textureID, modelMat, view, proj, activeCamPos, m_gameNodes, 1.0f,
+                                 node.roughness, node.metallic, gameTime, node.baseColor, node.textureScale, node.pixelated);
         }
     }
 

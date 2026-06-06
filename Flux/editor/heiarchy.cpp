@@ -4,6 +4,8 @@
 #include <cstring>
 #include <iostream>
 #include <filesystem>
+#include <algorithm>
+#include <cctype>
 #include "core/pathHelper.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -63,6 +65,9 @@ void Heiarchy::setup() {
     selectedIndex = -1;
 
     AddModel(PathHelper::GetAssetPath(std::string("assets/models/cube.obj")));
+
+    undoStack.clear();
+    redoStack.clear();
 }
 
 std::string Heiarchy::GetUniqueName(const std::string& baseName) {
@@ -90,6 +95,7 @@ std::string Heiarchy::GetUniqueName(const std::string& baseName) {
 }
 
 void Heiarchy::AddModel(const std::string& path, const std::string& name) {
+    PushUndoState();
     SceneNode n;
     n.type  = NodeType::Mesh;
     n.model = GetOrLoadModel(path);
@@ -100,6 +106,7 @@ void Heiarchy::AddModel(const std::string& path, const std::string& name) {
 }
 
 void Heiarchy::AddLight(NodeType type, const std::string& name) {
+    PushUndoState();
     SceneNode n;
     n.type = type;
 
@@ -130,6 +137,7 @@ void Heiarchy::AddLight(NodeType type, const std::string& name) {
 }
 
 void Heiarchy::AddCamera(const std::string& name) {
+    PushUndoState();
     SceneNode n;
     n.type = NodeType::Camera;
     n.name = GetUniqueName(name.empty() ? "Camera" : name);
@@ -160,7 +168,10 @@ void Heiarchy::DrawNode(int index) {
         if (ImGui::InputText(("##ren" + uid).c_str(), renameBuffer, sizeof(renameBuffer),
                 ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll))
         {
-            if (renameBuffer[0] != '\0') node.name = renameBuffer;
+            if (renameBuffer[0] != '\0' && node.name != renameBuffer) {
+                PushUndoState();
+                node.name = renameBuffer;
+            }
             renamingIndex = -1;
         }
         if (ImGui::IsItemDeactivated()) renamingIndex = -1;
@@ -214,6 +225,7 @@ void Heiarchy::DrawNode(int index) {
             int srcIdx = *(const int*)p->Data;
             if (srcIdx != index && srcIdx >= 0 && srcIdx < (int)nodes.size()) {
                 if (!nodes[srcIdx].isLightingNode && index != 0) {
+                    PushUndoState();
                     SceneNode moved = nodes[srcIdx];
                     nodes.erase(nodes.begin() + srcIdx);
                     int insertAt = (srcIdx < index) ? index : index + 1;
@@ -237,6 +249,7 @@ void Heiarchy::DrawNode(int index) {
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Delete")) {
+                PushUndoState();
                 nodes.erase(nodes.begin() + index);
                 if (selectedIndex >= (int)nodes.size())
                     selectedIndex = (int)nodes.size() - 1;
@@ -245,6 +258,7 @@ void Heiarchy::DrawNode(int index) {
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Duplicate")) {
+                PushUndoState();
                 SceneNode copy    = nodes[index];
                 copy.name         = GetUniqueName(copy.name);
                 copy.isLightingNode = false;
@@ -257,14 +271,39 @@ void Heiarchy::DrawNode(int index) {
 }
 
 void Heiarchy::renderHeiarchy(const std::filesystem::path& activeProjectPath) {
-    ImGui::Begin("Heiarchy");
+    ImGui::Begin("Scene");
     if (ImGui::IsWindowHovered()) ImGui::SetWindowFocus();
 
-    ImGui::Text("Scene");
+    ImGui::Text("Scene (Play)");
+    ImGui::SameLine();
+    
+    // Draw a small red circle using ImDrawList to avoid font-support question marks
+    ImVec2 pos = ImGui::GetCursorScreenPos();
+    float size = ImGui::GetFontSize() * 0.5f;
+    pos.y += ImGui::GetFontSize() * 0.25f + 1.0f; // Center vertically
+    pos.x += size * 0.5f;
+    ImGui::GetWindowDrawList()->AddCircleFilled(pos, size * 0.5f, IM_COL32(255, 30, 30, 255));
+    ImGui::Dummy(ImVec2(size + 5.0f, size)); // Advance cursor
     ImGui::Separator();
 
-    for (int i = 0; i < (int)nodes.size(); i++)
+    // Search input bar
+    ImGui::SetNextItemWidth(-1);
+    ImGui::InputTextWithHint("##hierSearch", "Search...", searchBuffer, sizeof(searchBuffer));
+    ImGui::Separator();
+
+    std::string searchStr = searchBuffer;
+    std::transform(searchStr.begin(), searchStr.end(), searchStr.begin(), ::tolower);
+
+    for (int i = 0; i < (int)nodes.size(); i++) {
+        if (!searchStr.empty()) {
+            std::string nameLower = nodes[i].name;
+            std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), ::tolower);
+            if (nameLower.find(searchStr) == std::string::npos) {
+                continue;
+            }
+        }
         DrawNode(i);
+    }
 
     float emptyH = std::max(ImGui::GetContentRegionAvail().y, 8.0f);
     ImGui::InvisibleButton("##hierEmpty", ImVec2(ImGui::GetContentRegionAvail().x, emptyH));
@@ -311,6 +350,30 @@ void Heiarchy::renderHeiarchy(const std::filesystem::path& activeProjectPath) {
     }
 
     ImGui::End();
+}
+
+void Heiarchy::PushUndoState() {
+    undoStack.push_back(nodes);
+    if (undoStack.size() > 50) {
+        undoStack.erase(undoStack.begin());
+    }
+    redoStack.clear();
+}
+
+void Heiarchy::Undo() {
+    if (undoStack.empty()) return;
+    redoStack.push_back(nodes);
+    nodes = undoStack.back();
+    undoStack.pop_back();
+    selectedIndex = -1;
+}
+
+void Heiarchy::Redo() {
+    if (redoStack.empty()) return;
+    undoStack.push_back(nodes);
+    nodes = redoStack.back();
+    redoStack.pop_back();
+    selectedIndex = -1;
 }
 
 }
