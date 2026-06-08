@@ -4,6 +4,11 @@
 #include <cstring>
 #include <iostream>
 
+#ifdef _WIN32
+    #include <windows.h>
+    #include <shellapi.h>
+#endif
+
 namespace Flux
 {
 std::filesystem::path Assets::resolveUniqueName(const std::filesystem::path &parentDir, const std::string &baseStem,
@@ -17,6 +22,22 @@ std::filesystem::path Assets::resolveUniqueName(const std::filesystem::path &par
         ++counter;
     }
     return candidate;
+}
+
+void Assets::openInNativeExplorer(const std::filesystem::path& path) {
+    #ifdef _WIN32
+        std::wstring parameters = L"";
+        
+        if (!std::filesystem::is_directory(path))
+        {
+            parameters = L"/select,\"" + path.wstring() + L"\"";
+            ShellExecuteW(NULL, L"open", L"explorer.exe", parameters.c_str(), NULL, SW_SHOWNORMAL);
+        }
+        else
+        {
+            ShellExecuteW(NULL, L"open", path.c_str(), NULL, NULL, SW_SHOWNORMAL);
+        }
+    #endif
 }
 
 void Assets::DrawAssetIcon(ImDrawList *drawList, ImVec2 pos, ImVec2 size, fileType type, unsigned int texID)
@@ -313,212 +334,273 @@ void Assets::renderExplorer(Viewport &viewport)
                         ImGui::TableSetupColumn("##col", ImGuiTableColumnFlags_WidthFixed, itemWidth + spacing);
                     }
 
-                    for (auto &child : currentFolderNode->children)
-                    {
-                        if (child.name == ".flux" && child.type == fileType::Folder)
-                            continue;
-
-                        ImGui::TableNextColumn();
-                        ImGui::PushID(child.name.c_str());
-
-                        ImVec2 cardSize(itemWidth, itemHeight);
-                        ImVec2 startPos = ImGui::GetCursorScreenPos();
-
-                        if (renamingNode == &child)
+                    if (currentFolderNode && !currentFolderNode->children.empty()) {
+                        for (size_t i = 0; i < currentFolderNode->children.size(); ++i)
                         {
-                            ImGui::SetNextItemWidth(itemWidth);
-                            ImGui::SetKeyboardFocusHere();
-                            bool commit = ImGui::InputText("##inlineRename", renameBuffer, sizeof(renameBuffer),
-                                                           ImGuiInputTextFlags_EnterReturnsTrue |
-                                                               ImGuiInputTextFlags_AutoSelectAll);
-                            bool cancelled = ImGui::IsItemDeactivated() && !ImGui::IsItemActivated();
-                            if (commit && renameBuffer[0] != '\0')
+                            if (i >= currentFolderNode->children.size()) break;
+            
+                            virtualFile &child = currentFolderNode->children[i];
+
+                            if (child.name == ".flux" && child.type == fileType::Folder)
+                                continue;
+
+                            ImGui::TableNextColumn();
+                            ImGui::PushID(child.name.c_str());
+
+                            ImVec2 cardSize(itemWidth, itemHeight);
+                            ImVec2 startPos = ImGui::GetCursorScreenPos();
+
+                            if (renamingNode == &child)
                             {
-                                std::filesystem::path parentDir = child.path.parent_path();
-                                std::string stem(renameBuffer);
-                                std::filesystem::path typedPath(stem);
-                                std::string typedStem = typedPath.stem().string();
-                                std::string typedExt = typedPath.extension().string();
-
-                                if (child.type == fileType::Folder)
+                                ImGui::SetNextItemWidth(itemWidth);
+                                ImGui::SetKeyboardFocusHere();
+                                bool commit = ImGui::InputText("##inlineRename", renameBuffer, sizeof(renameBuffer),
+                                                            ImGuiInputTextFlags_EnterReturnsTrue |
+                                                                ImGuiInputTextFlags_AutoSelectAll);
+                                bool cancelled = ImGui::IsItemDeactivated() && !ImGui::IsItemActivated();
+                                if (commit && renameBuffer[0] != '\0')
                                 {
-                                    typedStem = stem;
-                                    typedExt = "";
-                                }
-                                if (typedExt.empty() && child.type != fileType::Folder)
-                                    typedExt = child.path.extension().string();
+                                    std::filesystem::path parentDir = child.path.parent_path();
+                                    std::string stem(renameBuffer);
+                                    std::filesystem::path typedPath(stem);
+                                    std::string typedStem = typedPath.stem().string();
+                                    std::string typedExt = typedPath.extension().string();
 
-                                std::filesystem::path newPath = resolveUniqueName(parentDir, typedStem, typedExt);
-                                if (newPath != child.path)
-                                {
-                                    try
+                                    if (child.type == fileType::Folder)
                                     {
-                                        std::filesystem::rename(child.path, newPath);
+                                        typedStem = stem;
+                                        typedExt = "";
                                     }
-                                    catch (const std::filesystem::filesystem_error &e)
+                                    if (typedExt.empty() && child.type != fileType::Folder)
+                                        typedExt = child.path.extension().string();
+
+                                    std::filesystem::path newPath = resolveUniqueName(parentDir, typedStem, typedExt);
+                                    if (newPath != child.path)
                                     {
-                                        std::cerr << "Rename failed: " << e.what() << "\n";
+                                        try
+                                        {
+                                            std::filesystem::rename(child.path, newPath);
+                                        }
+                                        catch (const std::filesystem::filesystem_error &e)
+                                        {
+                                            std::cerr << "Rename failed: " << e.what() << "\n";
+                                        }
                                     }
-                                }
-                                renamingNode = nullptr;
-                                refreshRequested = true;
-                            }
-                            else if (cancelled)
-                            {
-                                renamingNode = nullptr;
-                            }
-                        }
-                        else
-                        {
-                            bool isSelected = (selectedAssetPath == child.path);
-
-                            ImDrawList *drawList = ImGui::GetWindowDrawList();
-                            ImVec2 rectMin = startPos;
-                            ImVec2 rectMax = ImVec2(startPos.x + itemWidth, startPos.y + itemHeight);
-
-                            ImVec2 mousePos = ImGui::GetIO().MousePos;
-                            bool isHovered = (mousePos.x >= rectMin.x && mousePos.x <= rectMax.x &&
-                                              mousePos.y >= rectMin.y && mousePos.y <= rectMax.y) &&
-                                             ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
-
-                            if (isSelected)
-                            {
-                                drawList->AddRectFilled(rectMin, rectMax, ImColor(30, 100, 200, 80), 4.f);
-                                drawList->AddRect(rectMin, rectMax, ImColor(50, 150, 250, 255), 4.f, 0, 1.5f);
-                            }
-                            else if (isHovered)
-                            {
-                                drawList->AddRectFilled(rectMin, rectMax, ImColor(100, 100, 100, 40), 4.f);
-                            }
-
-                            ImGui::BeginGroup();
-
-                            // 1. Draw Icon
-                            ImVec2 iconPos = ImGui::GetCursorScreenPos();
-                            float iconSize = 48.f;
-                            iconPos.x += (itemWidth - iconSize) * 0.5f;
-
-                            ImGui::Dummy(ImVec2(itemWidth, iconSize));
-
-                            unsigned int texID = 0;
-                            if (child.type == fileType::Texture)
-                            {
-                                texID = TextureLoader::Load(child.path.string());
-                            }
-                            DrawAssetIcon(drawList, iconPos, ImVec2(iconSize, iconSize), child.type, texID);
-
-                            // 2. Draw Label below icon
-                            ImGui::Spacing();
-                            std::string dispName = child.name;
-                            bool hasBackup = std::find(filesWithBackups.begin(), filesWithBackups.end(), child.path) !=
-                                             filesWithBackups.end();
-                            bool isCurrentlyOpen = (activeFilePath == child.path);
-                            if (isCurrentlyOpen && textEditor != nullptr && textEditor->IsTextChanged())
-                            {
-                                isEditorUnsaved = true;
-                            }
-                            if ((isCurrentlyOpen && isEditorUnsaved) || hasBackup)
-                            {
-                                dispName += " *";
-                            }
-
-                            std::string truncatedName = dispName;
-                            if (truncatedName.size() > 11)
-                            {
-                                truncatedName = truncatedName.substr(0, 9) + "..";
-                            }
-
-                            float textW = ImGui::CalcTextSize(truncatedName.c_str()).x;
-                            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (itemWidth - textW) * 0.5f);
-                            ImGui::TextUnformatted(truncatedName.c_str());
-
-                            ImGui::EndGroup();
-
-                            if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
-                            {
-                                selectedAssetPath = child.path;
-                            }
-
-                            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-                            {
-                                if (child.type == fileType::Folder)
-                                {
-                                    activeFolderPath = child.path;
+                                    renamingNode = nullptr;
                                     refreshRequested = true;
                                 }
-                                else if (child.type == fileType::Script || child.type == fileType::Text)
+                                else if (cancelled)
                                 {
-                                    if (textEditor != nullptr)
+                                    renamingNode = nullptr;
+                                }
+                            }
+                            else
+                            {
+                                bool isSelected = (selectedAssetPath == child.path);
+
+                                ImDrawList *drawList = ImGui::GetWindowDrawList();
+                                ImVec2 rectMin = startPos;
+                                ImVec2 rectMax = ImVec2(startPos.x + itemWidth, startPos.y + itemHeight);
+
+                                ImVec2 mousePos = ImGui::GetIO().MousePos;
+                                bool isHovered = (mousePos.x >= rectMin.x && mousePos.x <= rectMax.x &&
+                                                mousePos.y >= rectMin.y && mousePos.y <= rectMax.y) &&
+                                                ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
+
+                                if (isSelected)
+                                {
+                                    drawList->AddRectFilled(rectMin, rectMax, ImColor(30, 100, 200, 80), 4.f);
+                                    drawList->AddRect(rectMin, rectMax, ImColor(50, 150, 250, 255), 4.f, 0, 1.5f);
+                                }
+                                else if (isHovered)
+                                {
+                                    drawList->AddRectFilled(rectMin, rectMax, ImColor(100, 100, 100, 40), 4.f);
+                                }
+
+                                ImGui::BeginGroup();
+
+                                // 1. Draw Icon
+                                ImVec2 iconPos = ImGui::GetCursorScreenPos();
+                                float iconSize = 48.f;
+                                iconPos.x += (itemWidth - iconSize) * 0.5f;
+
+                                ImGui::Dummy(ImVec2(itemWidth, iconSize));
+
+                                unsigned int texID = 0;
+                                if (child.type == fileType::Texture)
+                                {
+                                    texID = TextureLoader::Load(child.path.string());
+                                }
+                                DrawAssetIcon(drawList, iconPos, ImVec2(iconSize, iconSize), child.type, texID);
+
+                                // 2. Draw Label below icon
+                                ImGui::Spacing();
+                                std::string dispName = child.name;
+                                bool hasBackup = std::find(filesWithBackups.begin(), filesWithBackups.end(), child.path) !=
+                                                filesWithBackups.end();
+                                bool isCurrentlyOpen = (activeFilePath == child.path);
+                                if (isCurrentlyOpen && textEditor != nullptr && textEditor->IsTextChanged())
+                                {
+                                    isEditorUnsaved = true;
+                                }
+                                if ((isCurrentlyOpen && isEditorUnsaved) || hasBackup)
+                                {
+                                    dispName += " *";
+                                }
+
+                                std::string truncatedName = dispName;
+                                if (truncatedName.size() > 11)
+                                {
+                                    truncatedName = truncatedName.substr(0, 9) + "..";
+                                }
+
+                                float textW = ImGui::CalcTextSize(truncatedName.c_str()).x;
+                                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (itemWidth - textW) * 0.5f);
+                                ImGui::TextUnformatted(truncatedName.c_str());
+
+                                ImGui::EndGroup();
+
+                                if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+                                {
+                                    selectedAssetPath = child.path;
+                                }
+
+                                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                                {
+                                    if (child.type == fileType::Folder)
                                     {
-                                        activeScriptName = child.name;
-                                        activeFilePath = child.path;
-                                        std::ifstream ifs(child.path);
-                                        if (ifs.is_open())
+                                        activeFolderPath = child.path;
+                                        refreshRequested = true;
+                                    }
+                                    else if (child.type == fileType::Script || child.type == fileType::Text)
+                                    {
+                                        if (textEditor != nullptr)
                                         {
-                                            std::string content((std::istreambuf_iterator<char>(ifs)),
-                                                                (std::istreambuf_iterator<char>()));
-                                            textEditor->SetText(content);
-                                            isEditorVisible = true;
-                                            ifs.close();
+                                            activeScriptName = child.name;
+                                            activeFilePath = child.path;
+                                            std::ifstream ifs(child.path);
+                                            if (ifs.is_open())
+                                            {
+                                                std::string content((std::istreambuf_iterator<char>(ifs)),
+                                                                    (std::istreambuf_iterator<char>()));
+                                                textEditor->SetText(content);
+                                                isEditorVisible = true;
+                                                ifs.close();
+                                            }
+                                            ImGui::SetWindowFocus("Text Editor");
                                         }
-                                        ImGui::SetWindowFocus("Text Editor");
                                     }
-                                }
-                                else if (child.path.extension() == ".fscn")
-                                {
-                                    if (ribbonPtr && ribbonPtr->heiarchyPtr)
+                                    else if (child.path.extension() == ".fscn")
                                     {
-                                        SceneSerializer::Load(*ribbonPtr->heiarchyPtr, child.path, projectRoot.path);
-                                        Output::addLog("Opened scene: " + child.name);
+                                        if (ribbonPtr && ribbonPtr->heiarchyPtr)
+                                        {
+                                            SceneSerializer::Load(*ribbonPtr->heiarchyPtr, child.path, projectRoot.path);
+                                            Output::addLog("Opened scene: " + child.name);
+                                        }
                                     }
                                 }
-                            }
 
-                            // Drag & drop source
-                            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
-                            {
-                                std::string payloadPath = child.path.string();
-                                if (child.type == fileType::Model)
+                                // Drag & drop source
+                                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
                                 {
-                                    ImGui::SetDragDropPayload("MODEL_FILE", payloadPath.c_str(),
-                                                              payloadPath.size() + 1);
+                                    std::string payloadPath = child.path.string();
+                                    if (child.type == fileType::Model)
+                                    {
+                                        ImGui::SetDragDropPayload("MODEL_FILE", payloadPath.c_str(),
+                                                                payloadPath.size() + 1);
+                                    }
+                                    ImGui::SetDragDropPayload("EXPLORER_FILE", payloadPath.c_str(), payloadPath.size() + 1);
+                                    ImGui::Text("Moving %s", child.name.c_str());
+                                    ImGui::EndDragDropSource();
                                 }
-                                ImGui::SetDragDropPayload("EXPLORER_FILE", payloadPath.c_str(), payloadPath.size() + 1);
-                                ImGui::Text("Moving %s", child.name.c_str());
-                                ImGui::EndDragDropSource();
-                            }
 
-                            // Context Menu
-                            if (ImGui::BeginPopupContextItem("Context Menu"))
-                            {
-                                selectedAssetPath = child.path;
-                                if (ImGui::MenuItem("Rename"))
+                                if (child.type == fileType::Folder && ImGui::BeginDragDropTarget())
                                 {
-                                    renamingNode = &child;
-                                    std::string stemOnly =
-                                        (child.type == fileType::Folder) ? child.name : child.path.stem().string();
-                                    std::strncpy(renameBuffer, stemOnly.c_str(), sizeof(renameBuffer) - 1);
-                                    renameBuffer[sizeof(renameBuffer) - 1] = '\0';
+                                    if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("EXPLORER_FILE"))
+                                    {
+                                        std::filesystem::path srcPath((const char *)payload->Data);
+                                        std::filesystem::path destPath = child.path / srcPath.filename();
+
+                                        if (srcPath != child.path && srcPath != destPath)
+                                        {
+                                            try
+                                            {
+                                                std::filesystem::rename(srcPath, destPath);
+                                                refreshRequested = true;
+                                            }
+                                            catch (const std::filesystem::filesystem_error &e)
+                                            {
+                                                std::cerr << "Failed to move file via drag/drop: " << e.what() << "\n";
+                                            }
+                                        }
+                                    }
+                                    ImGui::EndDragDropTarget();
                                 }
-                                ImGui::Separator();
-                                if (ImGui::MenuItem("Delete"))
+
+                                // Context Menu
+                                if (ImGui::BeginPopupContextItem("ItemContextMenu"))
                                 {
-                                    pathToDelete = child.path;
-                                    selectedAssetPath = "";
+                                    selectedAssetPath = child.path;
+
+                                    if (ImGui::MenuItem("Show in File Explorer")) {
+                                        openInNativeExplorer(child.path);
+                                    }
+
+                                    ImGui::Separator();
+
+                                    if (ImGui::MenuItem("Rename", "F2"))
+                                    {
+                                        renamingNode = &child;
+                                        std::string stemOnly =
+                                            (child.type == fileType::Folder) ? child.name : child.path.stem().string();
+                                        std::strncpy(renameBuffer, stemOnly.c_str(), sizeof(renameBuffer) - 1);
+                                        renameBuffer[sizeof(renameBuffer) - 1] = '\0';
+                                    }
+
+                                    ImGui::Separator();
+
+                                    if (ImGui::MenuItem("Copy", "Ctrl+C"))
+                                    {
+                                        m_clipboardSourcePath = child.path;
+                                        m_clipboardOp = ClipboardOp::Copy;
+                                    }
+
+                                    if (ImGui::MenuItem("Cut", "Ctrl+X"))
+                                    {
+                                        m_clipboardSourcePath = child.path;
+                                        m_clipboardOp = ClipboardOp::Cut;
+                                    }
+
+                                    ImGui::Separator();
+
+                                    if (ImGui::MenuItem("Delete", "Del"))
+                                    {
+                                        pathToDelete = child.path;
+                                        selectedAssetPath = "";
+                                    }
+
+                                    ImGui::EndPopup();
                                 }
-                                ImGui::EndPopup();
                             }
+                            ImGui::PopID();
                         }
-                        ImGui::PopID();
                     }
                     ImGui::EndTable();
                 }
             }
+            ImGui::EndChild();
+            ImGui::EndTable();
 
             // Allow right-click on empty space inside the grid to create files
             if (ImGui::BeginPopupContextWindow("##emptyGridArea",
                                                ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
             {
+                if (ImGui::MenuItem("Show Current Folder in Explore")) {
+                    openInNativeExplorer(activeFolderPath);
+                }
+
+                ImGui::Separator();
+
                 if (ImGui::BeginMenu("Create.."))
                 {
                     if (ImGui::MenuItem("Folder"))
@@ -527,12 +609,68 @@ void Assets::renderExplorer(Viewport &viewport)
                         copyTemplateItem("scripts", "TemplateScript.lua", "NewScript", ".lua");
                     ImGui::EndMenu();
                 }
+
+                ImGui::Separator();
+
+                bool canPaste = !m_clipboardSourcePath.empty() && std::filesystem::exists(m_clipboardSourcePath);
+                if (!canPaste)
+                    ImGui::BeginDisabled();
+
+                if (ImGui::MenuItem("Paste", "Ctrl+V"))
+                {
+                    std::filesystem::path destPath = activeFolderPath / m_clipboardSourcePath.filename();
+                    destPath =
+                        resolveUniqueName(activeFolderPath, destPath.stem().string(), destPath.extension().string());
+
+                    try
+                    {
+                        if (m_clipboardOp == ClipboardOp::Copy)
+                        {
+                            std::filesystem::copy(m_clipboardSourcePath, destPath,
+                                                  std::filesystem::copy_options::recursive);
+                        }
+                        else if (m_clipboardOp == ClipboardOp::Cut)
+                        {
+                            std::filesystem::rename(m_clipboardSourcePath, destPath);
+                            m_clipboardSourcePath = ""; // clear clipboard after a cut-paste move
+                            m_clipboardOp = ClipboardOp::None;
+                        }
+                        refreshRequested = true;
+                    }
+                    catch (const std::filesystem::filesystem_error &e)
+                    {
+                        std::cerr << "Paste operation failed: " << e.what() << "\n";
+                    }
+                }
+
+                if (!canPaste)
+                    ImGui::EndDisabled();
+
                 ImGui::EndPopup();
             }
 
-            ImGui::EndChild();
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("EXPLORER_FILE"))
+                {
+                    std::filesystem::path srcPath((const char *)payload->Data);
+                    std::filesystem::path destPath = activeFolderPath / srcPath.filename();
 
-            ImGui::EndTable();
+                    if (srcPath.parent_path() != activeFolderPath)
+                    {
+                        try
+                        {
+                            std::filesystem::rename(srcPath, destPath);
+                            refreshRequested = true;
+                        }
+                        catch (const std::filesystem::filesystem_error &e)
+                        {
+                            std::cerr << "Failed to drop file into window background: " << e.what() << "\n";
+                        }
+                    }
+                }
+                ImGui::EndDragDropTarget();
+            }
         }
     }
     else
@@ -712,10 +850,10 @@ void Assets::syncFiles(const std::filesystem::path &path, virtualFile &node)
                 child.type = fileType::Model;
             else if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".tga")
                 child.type = fileType::Texture;
-			else if (ext == ".fscn")
-				child.type = fileType::Scene;
-			else if (ext == ".flux")
-				child.type = fileType::Project;
+            else if (ext == ".fscn")
+                child.type = fileType::Scene;
+            else if (ext == ".flux")
+                child.type = fileType::Project;
             else
                 child.type = fileType::Text;
         }
@@ -840,6 +978,10 @@ void Assets::TriggerOpenProject()
         activeFolderPath = selectedPath;
         projectRoot.path = selectedPath;
         projectRoot.name = selectedPath.filename().string();
+
+        selectedAssetPath = ""; 
+        renamingNode = nullptr;
+
         syncFiles(selectedPath, projectRoot);
         scanForBackups();
 

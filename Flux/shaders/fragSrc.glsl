@@ -8,6 +8,7 @@ in vec4 FragPosLightSpace;
 in mat3 TBN;
 
 uniform bool      hasTexture;
+uniform bool      hasAlpha;
 uniform bool      isSelected;
 uniform sampler2D albedoMap;
 uniform vec3      matColor;
@@ -130,9 +131,14 @@ vec3 PBRContrib(vec3 N, vec3 V, vec3 L, vec3 lightColor,
 }
 
 void main() {
+    vec4 texSample = hasTexture ? texture(albedoMap, TexCoords) : vec4(1.0);
+
+    if (hasAlpha && texSample.a < 0.1)
+        discard;
+
     vec3 albedo;
     if (hasTexture) {
-        albedo = pow(texture(albedoMap, TexCoords).rgb, vec3(2.2));
+        albedo = pow(texSample.rgb, vec3(2.2));
     } else {
         albedo = pow(max(matColor, vec3(0.001)), vec3(2.2));
     }
@@ -217,5 +223,5 @@ void main() {
         color += vec3(0.2, 0.2, 0.0); 
     }
 
-    FragColor = vec4(color, alpha);
+    FragColor = vec4(color, hasAlpha ? (texSample.a * alpha) : alpha);
 }

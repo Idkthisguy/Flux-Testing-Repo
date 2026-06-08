@@ -42,6 +42,13 @@ Flux gonna be cross platform on release (Except for macOS which is still in deve
 *[Kost](https://github.com/Kost233)'s screenshot of Flux at June 4, 2026*
 ![Screenshot](cool/Kost'sFirstScreenshot.png)
 
+*early `.fbx` import at full screen (June 7, 2026)*
+
+> #### [!] I DON'T OWN THESE MODELS AND TEXTURES
+
+
+![Screenshot](cool/Screenshot2026-06-07FBX_IMPORT.png)
+
 ## Top Contributors
 
 Small party, I know ;-;

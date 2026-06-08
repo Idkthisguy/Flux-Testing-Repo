@@ -63,7 +63,7 @@ namespace Flux {
 
         float roughness = 0.7f;
         float metallic  = 0.0f;
-        glm::vec3 baseColor = glm::vec3(0.8f, 0.8f, 0.8f);
+        glm::vec3 baseColor = glm::vec3(-1.f);
         glm::vec2 textureScale = glm::vec2(1.0f, 1.0f);
         bool pixelated = false;
 
@@ -78,7 +78,7 @@ namespace Flux {
 
         float fov = 70.0f;
 
-        bool hasPhysicsTransform = false; // switch between physics simulation and editor render
+        bool hasPhysicsTransform = false;
 
         glm::mat4 GetTransformMatrix() const {
             if (hasPhysicsTransform)
@@ -97,6 +97,8 @@ namespace Flux {
 
         JPH::BodyID physicsBodyID;
         glm::mat4 physicsWorldMatrix = glm::mat4(1.0f);
+
+        bool hasUserBaseColor = false;
     };
 
 }

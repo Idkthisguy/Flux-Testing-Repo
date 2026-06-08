@@ -315,9 +315,10 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
         if (node.type == NodeType::Camera)
             continue;
         renderer->DrawScene(*node.model, node.textureID, node.GetTransformMatrix(), view, proj, camera->Position,
-                            heiarchy.nodes, 1.0f, node.roughness, node.metallic, timeOfDay, node.baseColor, node.textureScale, node.pixelated);
+                    heiarchy.nodes, 1.0f, node.roughness, node.metallic, timeOfDay,
+                    node.baseColor,
+                    node.textureScale, node.pixelated);
     }
-
     if (isDraggingModel && ghostModel)
     {
         glm::mat4 gt = glm::translate(glm::mat4(1.f), ghostPos);

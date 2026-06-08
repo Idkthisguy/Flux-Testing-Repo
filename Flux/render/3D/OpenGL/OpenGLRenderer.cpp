@@ -1,5 +1,6 @@
 #include "OpenGLRenderer.h"
 #include "core/pathHelper.h"
+#include <algorithm>
 #include <fstream>
 #include <glad/glad.h>
 #include <iostream>
@@ -175,7 +176,8 @@ void Renderer3D::DrawDepthPass(const std::vector<SceneNode> &nodes, glm::vec3 li
 
 void Renderer3D::DrawScene(Model &model, unsigned int overrideTexID, glm::mat4 modelMatrix, glm::mat4 view,
                            glm::mat4 proj, glm::vec3 cameraPos, const std::vector<SceneNode> &lights, float alpha,
-                           float roughness, float metallic, float timeOfDay, glm::vec3 baseColor, glm::vec2 textureScale, bool pixelated)
+                           float roughness, float metallic, float timeOfDay, glm::vec3 baseColor,
+                           glm::vec2 textureScale, bool pixelated)
 {
     glUseProgram(shaderProgram);
 
@@ -330,15 +332,16 @@ void Renderer3D::DrawScene(Model &model, unsigned int overrideTexID, glm::mat4 m
     set3f(shaderProgram, "surfaceColor", surfCol);
     set1f(shaderProgram, "surfaceIntensity", surfInt);
 
-    for (auto &mesh : model.meshes)
-    {
-        bool useTex = (overrideTexID != 0);
+    auto drawMesh = [&](const Mesh &mesh) {
+        unsigned int texToUse = (overrideTexID != 0) ? overrideTexID : mesh.textureID;
+        bool useTex = (texToUse != 0);
         set1i(shaderProgram, "hasTexture", useTex ? 1 : 0);
+        set1i(shaderProgram, "hasAlpha", (useTex && mesh.hasAlpha) ? 1 : 0);
 
         if (useTex)
         {
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, overrideTexID);
+            glBindTexture(GL_TEXTURE_2D, texToUse);
             set1i(shaderProgram, "albedoMap", 0);
 
             if (pixelated)
@@ -356,18 +359,59 @@ void Renderer3D::DrawScene(Model &model, unsigned int overrideTexID, glm::mat4 m
         }
         else
         {
-
             glm::vec3 col = (baseColor.r >= 0.f) ? baseColor : (mesh.hasMtlColor) ? mesh.matColor : glm::vec3(0.8f);
             set3f(shaderProgram, "matColor", col);
         }
 
+        if (mesh.twoSided)
+            glDisable(GL_CULL_FACE);
+        else
+            glEnable(GL_CULL_FACE);
+
         glBindVertexArray(mesh.VAO);
         glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, nullptr);
         glBindVertexArray(0);
-    }
+    };
 
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
+    for (auto &mesh : model.meshes)
+    {
+        if (mesh.hasAlpha)
+            continue;
+        drawMesh(mesh);
+    }
+
+    std::vector<const Mesh *> alphaMeshes;
+    for (auto &mesh : model.meshes)
+        if (mesh.hasAlpha)
+            alphaMeshes.push_back(&mesh);
+
+    if (!alphaMeshes.empty())
+    {
+        glm::vec3 origin = glm::vec3(modelMatrix[3]);
+        std::sort(alphaMeshes.begin(), alphaMeshes.end(), [&](const Mesh *a, const Mesh *b) {
+            auto centre = [&](const Mesh *m) -> float {
+                if (m->verticies.empty())
+                    return 0.f;
+                glm::vec4 wp = modelMatrix * glm::vec4(m->verticies[0].Position, 1.f);
+                glm::vec3 d = glm::vec3(wp) - cameraPos;
+                return glm::dot(d, d);
+            };
+            return centre(a) > centre(b);
+        });
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDepthMask(GL_FALSE);
+        for (auto *mesh : alphaMeshes)
+            drawMesh(*mesh);
+        glDepthMask(GL_TRUE);
+        glDisable(GL_BLEND);
+    }
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
 }
 
 void Renderer3D::InitSkybox()
