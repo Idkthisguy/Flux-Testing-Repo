@@ -66,10 +66,10 @@ void Runtime::Start(const std::string &projectName, const std::filesystem::path 
     SDL_ShowWindow(m_window);
     SDL_RaiseWindow(m_window);
 
-    SplashConfig splash;
+    /*SplashConfig splash;
     splash.title = "Flux Game";
     splash.subtitle = "Loading...";
-    Flux::RunSplashScreen(m_window, splash);
+    Flux::RunSplashScreen(m_window, splash);*/ // Ditch splash screen till UI support
 
     if (!SDL_GL_MakeCurrent(m_window, m_glContext))
     {

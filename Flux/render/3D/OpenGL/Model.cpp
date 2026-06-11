@@ -6,6 +6,103 @@
 namespace Flux
 {
 
+static bool HasRealAlpha(const unsigned char *data, int w, int h)
+{
+    const int total = w * h;
+    for (int i = 0; i < total; ++i)
+        if (data[i * 4 + 3] < 254)
+            return true;
+    return false;
+}
+
+static unsigned int LoadMaterialTextures(aiMaterial *mat, aiTextureType type, const aiScene *scene,
+                                         const std::filesystem::path &modelDir, bool &outHasAlpha)
+{
+    aiString texPath;
+    if (mat->GetTexture(type, 0, &texPath) != AI_SUCCESS)
+    {
+        return 0;
+    }
+
+    std::string rawPath = texPath.C_Str();
+
+    const aiTexture *aitex = scene->GetEmbeddedTexture(rawPath.c_str());
+    if (aitex)
+    {
+        if (aitex->mHeight == 0)
+        {
+            stbi_set_flip_vertically_on_load(false);
+            int w, h, ch;
+            unsigned char *data = stbi_load_from_memory(reinterpret_cast<const unsigned char *>(aitex->pcData),
+                                                        (int)aitex->mWidth, &w, &h, &ch, 4);
+
+            if (data)
+            {
+                unsigned int id;
+                glGenTextures(1, &id);
+                glBindTexture(GL_TEXTURE_2D, id);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                glGenerateMipmap(GL_TEXTURE_2D);
+
+                outHasAlpha = HasRealAlpha(data, w, h);
+                stbi_image_free(data);
+
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                return id;
+            }
+        }
+        else
+        {
+            int w = (int)aitex->mWidth;
+            int h = (int)aitex->mHeight;
+            unsigned int id;
+            glGenTextures(1, &id);
+            glBindTexture(GL_TEXTURE_2D, id);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, aitex->pcData);
+            glGenerateMipmap(GL_TEXTURE_2D);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            return id;
+        }
+    }
+    else
+    {
+        std::filesystem::path fullTex = modelDir / rawPath;
+        std::string texStr = fullTex.string();
+        std::replace(texStr.begin(), texStr.end(), '\\', '/');
+
+        if (!std::filesystem::exists(texStr))
+        {
+            std::string justName = std::filesystem::path(rawPath).filename().string();
+            texStr = (modelDir / justName).string();
+            std::replace(texStr.begin(), texStr.end(), '\\', '/');
+        }
+
+        unsigned int id = TextureLoader::Load(texStr);
+
+        size_t fsize;
+        void *fbuf = SDL_LoadFile(texStr.c_str(), &fsize);
+        if (fbuf)
+        {
+            int aw, ah, ach;
+            unsigned char *adata = stbi_load_from_memory((const unsigned char *)fbuf, (int)fsize, &aw, &ah, &ach, 4);
+            SDL_free(fbuf);
+            if (adata)
+            {
+                outHasAlpha = HasRealAlpha(adata, aw, ah);
+                stbi_image_free(adata);
+            }
+        }
+        return id;
+    }
+    return 0;
+}
+
 Model::~Model()
 {
     for (auto &mesh : meshes)
@@ -43,7 +140,8 @@ void Model::Load()
     bool isFbx = (ext == "fbx");
     unsigned int importFlags = aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace |
                                aiProcess_PreTransformVertices | aiProcess_JoinIdenticalVertices |
-                               aiProcess_OptimizeMeshes | aiProcess_RemoveRedundantMaterials;
+                               aiProcess_OptimizeMeshes | aiProcess_RemoveRedundantMaterials |
+                               aiProcess_FindDegenerates | aiProcess_SortByPType | aiProcess_FixInfacingNormals;
     if (isFbx)
         importFlags |= aiProcess_FlipUVs;
 
@@ -106,98 +204,44 @@ void Model::Load()
             int twoSidedVal = 0;
             mat->Get(AI_MATKEY_TWOSIDED, twoSidedVal);
             myMesh.twoSided = (twoSidedVal != 0);
-            aiString texPath;
-            if (mat->GetTexture(aiTextureType_DIFFUSE, 0, &texPath) == AI_SUCCESS)
+
+            bool dummyAlpha = false;
+
+            myMesh.material.baseColor = myMesh.matColor;
+
+            myMesh.textureID = LoadMaterialTextures(mat, aiTextureType_DIFFUSE, scene, modelDir, myMesh.hasAlpha);
+
+            myMesh.material.normalMap = LoadMaterialTextures(mat, aiTextureType_NORMALS, scene, modelDir, dummyAlpha);
+            myMesh.material.metallicMap =
+                LoadMaterialTextures(mat, aiTextureType_METALNESS, scene, modelDir, dummyAlpha);
+            myMesh.material.roughnessMap =
+                LoadMaterialTextures(mat, aiTextureType_DIFFUSE_ROUGHNESS, scene, modelDir, dummyAlpha);
+            if (myMesh.material.roughnessMap == 0)
             {
-                std::string rawPath = texPath.C_Str();
-
-                const aiTexture *aitex = scene->GetEmbeddedTexture(rawPath.c_str());
-                if (aitex)
-                {
-
-                    if (aitex->mHeight == 0)
-                    {
-                        stbi_set_flip_vertically_on_load(false);
-                        int w, h, ch;
-
-                        unsigned char *data = stbi_load_from_memory(
-                            reinterpret_cast<const unsigned char *>(aitex->pcData), (int)aitex->mWidth, &w, &h, &ch, 4);
-
-                        if (data)
-                        {
-                            unsigned int id;
-                            glGenTextures(1, &id);
-                            glBindTexture(GL_TEXTURE_2D, id);
-
-                            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-                            glGenerateMipmap(GL_TEXTURE_2D);
-
-                            stbi_image_free(data);
-
-                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                            myMesh.textureID = id;
-                            myMesh.hasAlpha = true;
-                        }
-                    }
-                    else
-                    {
-
-                        int w = (int)aitex->mWidth;
-                        int h = (int)aitex->mHeight;
-                        unsigned int id;
-                        glGenTextures(1, &id);
-                        glBindTexture(GL_TEXTURE_2D, id);
-                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, aitex->pcData);
-                        glGenerateMipmap(GL_TEXTURE_2D);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                        myMesh.textureID = id;
-                    }
-                }
-                else
-                {
-
-                    std::filesystem::path fullTex = modelDir / rawPath;
-                    std::string texStr = fullTex.string();
-                    std::replace(texStr.begin(), texStr.end(), '\\', '/');
-
-                    if (!std::filesystem::exists(texStr))
-                    {
-
-                        std::string justName = std::filesystem::path(rawPath).filename().string();
-                        texStr = (modelDir / justName).string();
-                        std::replace(texStr.begin(), texStr.end(), '\\', '/');
-                    }
-
-                    myMesh.textureID = TextureLoader::Load(texStr);
-
-                    std::string lext = std::filesystem::path(texStr).extension().string();
-                    std::transform(lext.begin(), lext.end(), lext.begin(), ::tolower);
-                    if (lext == ".png" || lext == ".tga" || lext == ".dds" || lext == ".webp")
-                        myMesh.hasAlpha = true;
-                }
+                myMesh.material.roughnessMap =
+                    LoadMaterialTextures(mat, aiTextureType_SHININESS, scene, modelDir, dummyAlpha);
             }
+            myMesh.material.aoMap = LoadMaterialTextures(mat, aiTextureType_AMBIENT, scene, modelDir, dummyAlpha);
+            /*myMesh.material.dispMap =
+                LoadMaterialTextures(mat, aiTextureType_DISPLACEMENT, scene, modelDir, dummyAlpha);
+            myMesh.material.alphaMap = LoadMaterialTextures(mat, aiTextureType_OPACITY, scene, modelDir, dummyAlpha);*/
 
             float opacity = 1.0f;
             mat->Get(AI_MATKEY_OPACITY, opacity);
-            if (opacity < 1.0f)
+            if (opacity < 0.99f)
                 myMesh.hasAlpha = true;
 
-            if (myMesh.hasAlpha && !myMesh.twoSided)
+            if (myMesh.hasAlpha && myMesh.textureID != 0 && !myMesh.twoSided)
                 myMesh.twoSided = true;
 
-            if (myMesh.textureID == 0)
-            {
-                aiColor3D col(0.8f, 0.4f, 0.1f);
-                mat->Get(AI_MATKEY_COLOR_DIFFUSE, col);
-                myMesh.matColor = glm::vec3(col.r, col.g, col.b);
-                myMesh.hasMtlColor = true;
-            }
+            aiColor3D col(0.8f, 0.4f, 0.1f);
+            mat->Get(AI_MATKEY_COLOR_DIFFUSE, col);
+            myMesh.matColor = glm::vec3(col.r, col.g, col.b);
+            myMesh.material.albedoMap = myMesh.textureID;
+            myMesh.hasMtlColor = true;
+
+            mat->Get(AI_MATKEY_METALLIC_FACTOR, myMesh.material.metallicMap);
+            mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, myMesh.material.roughnessMap);
         }
 
         glGenVertexArrays(1, &myMesh.VAO);
@@ -239,11 +283,34 @@ void Model::Draw(float /*alphaOverride*/)
 {
     for (auto &mesh : meshes)
     {
-        if (mesh.textureID != 0)
-        {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, mesh.textureID);
-        }
+        // Albedo / Diffuse
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, mesh.material.albedoMap ? mesh.material.albedoMap : mesh.textureID);
+
+        // Normals
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, mesh.material.normalMap);
+
+        // Metallic
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, mesh.material.metallicMap);
+
+        // Roughness
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, mesh.material.roughnessMap);
+
+        // Ambient Occlusion
+        glActiveTexture(GL_TEXTURE4);
+        glBindTexture(GL_TEXTURE_2D, mesh.material.aoMap);
+
+        /* // Displacement
+        glActiveTexture(GL_TEXTURE5);
+        glBindTexture(GL_TEXTURE_2D, mesh.material.dispMap);
+
+        // Alpha
+        glActiveTexture(GL_TEXTURE6);
+        glBindTexture(GL_TEXTURE_2D, mesh.material.alphaMap);*/
+
         glBindVertexArray(mesh.VAO);
         glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, nullptr);
         glBindVertexArray(0);

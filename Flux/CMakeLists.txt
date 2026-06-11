@@ -53,6 +53,7 @@ add_executable(Flux
         logic/data/cameraGuizmoModel.h
         logic/PhysicsLayer.h
         resource.rc
+        logic/data/material.h
 )
 
 get_filename_component(PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)

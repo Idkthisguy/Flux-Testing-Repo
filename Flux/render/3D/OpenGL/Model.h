@@ -8,6 +8,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 #include <vector>
+#include "logic/data/material.h"
 
 namespace Flux
 {
@@ -33,6 +34,8 @@ struct Mesh
 
     bool twoSided = false;
     bool hasAlpha = false;
+
+    Material material;
 
     std::vector<Vertex> verticies;
     std::vector<unsigned int> indices;

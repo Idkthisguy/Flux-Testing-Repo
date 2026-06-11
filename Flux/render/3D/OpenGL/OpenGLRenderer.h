@@ -15,7 +15,7 @@ namespace Flux {
         void Init();
 
         void InitShadowMap(int resolution = 4096);
-        void DrawDepthPass(const std::vector<SceneNode>& nodes, glm::vec3 lightDir);
+        void DrawDepthPass(const std::vector<SceneNode>& nodes, glm::vec3 lightDir, glm::vec3 cameraPos = glm::vec3(0.f));
 
         void DrawScene(Model& model, unsigned int overrideTexID,
                        glm::mat4 modelMatrix, glm::mat4 view, glm::mat4 proj,

@@ -78,11 +78,26 @@ class SceneSerializer
             n["velocity"] = {node.velocity.x, node.velocity.y, node.velocity.z};
             n["isAnchored"] = node.isAnchored;
 
+            if (node.model && !node.model->meshes.empty())
+            {
+                Material &mat = node.model->meshes[0].material;
+
+                n["albedoMap"] =
+                    mat.albedoPath.empty() ? "" : std::filesystem::relative(mat.albedoPath, projectRoot).string();
+                n["normalMap"] =
+                    mat.normalPath.empty() ? "" : std::filesystem::relative(mat.normalPath, projectRoot).string();
+                n["metallicMap"] =
+                    mat.metallicPath.empty() ? "" : std::filesystem::relative(mat.metallicPath, projectRoot).string();
+                n["roughnessMap"] =
+                    mat.roughnessPath.empty() ? "" : std::filesystem::relative(mat.roughnessPath, projectRoot).string();
+                n["aoMap"] = mat.aoPath.empty() ? "" : std::filesystem::relative(mat.aoPath, projectRoot).string();
+            }
+
             j["nodes"].push_back(n);
         }
         j["version"] = 2;
         std::ofstream file(filePath);
-        file << j.dump(4);       
+        file << j.dump(4);
     }
 
     static void Load(Heiarchy &h, const std::filesystem::path &loadPath, const std::filesystem::path &projectRoot)
@@ -164,7 +179,8 @@ class SceneSerializer
 
             if (jNode.contains("textureScale") && jNode["textureScale"].is_array() && jNode["textureScale"].size() == 2)
             {
-                n.textureScale = glm::vec2(jNode["textureScale"][0].get<float>(), jNode["textureScale"][1].get<float>());
+                n.textureScale =
+                    glm::vec2(jNode["textureScale"][0].get<float>(), jNode["textureScale"][1].get<float>());
             }
             else
             {
@@ -208,6 +224,33 @@ class SceneSerializer
                 if (std::filesystem::exists(iconPath))
                     n.textureID = TextureLoader::Load(iconPath);
             }
+
+            if (n.model && !n.model->meshes.empty())
+            {
+                auto loadMap = [&](const std::string &key, unsigned int &idOut, std::string &pathOut) {
+                    if (jNode.contains(key) && !jNode[key].get<std::string>().empty())
+                    {
+                        std::filesystem::path absPath = projectRoot / jNode[key].get<std::string>();
+                        pathOut = absPath.string();
+                        idOut = TextureLoader::Load(pathOut);
+                    }
+                };
+
+                for (auto &mesh : n.model->meshes)
+                {
+                    loadMap("normalMap", mesh.material.normalMap, mesh.material.normalPath);
+                    loadMap("metallicMap", mesh.material.metallicMap, mesh.material.metallicPath);
+                    loadMap("roughnessMap", mesh.material.roughnessMap, mesh.material.roughnessPath);
+                    loadMap("aoMap", mesh.material.aoMap, mesh.material.aoPath);
+                }
+
+                // keep node.texturePath / node.textureID in sync with albedo for legacy billboard/sprite nodes
+                if (!n.model->meshes[0].material.albedoPath.empty()) {
+                    n.texturePath = n.model->meshes[0].material.albedoPath;
+                    n.textureID   = n.model->meshes[0].material.albedoMap;
+                }
+            }
+
             h.nodes.push_back(n);
         }
         h.undoStack.clear();
