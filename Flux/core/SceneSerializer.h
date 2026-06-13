@@ -82,8 +82,10 @@ class SceneSerializer
             {
                 Material &mat = node.model->meshes[0].material;
 
-                n["albedoMap"] =
-                    mat.albedoPath.empty() ? "" : std::filesystem::relative(mat.albedoPath, projectRoot).string();
+                // save Albedo path from material or fall back to node path if material is unpopulated
+                std::string albedo = mat.albedoPath.empty() ? node.texturePath : mat.albedoPath;
+                n["albedoMap"] = albedo.empty() ? "" : std::filesystem::relative(albedo, projectRoot).string();
+
                 n["normalMap"] =
                     mat.normalPath.empty() ? "" : std::filesystem::relative(mat.normalPath, projectRoot).string();
                 n["metallicMap"] =
@@ -238,16 +240,17 @@ class SceneSerializer
 
                 for (auto &mesh : n.model->meshes)
                 {
+                    loadMap("albedoMap", mesh.material.albedoMap, mesh.material.albedoPath);
                     loadMap("normalMap", mesh.material.normalMap, mesh.material.normalPath);
                     loadMap("metallicMap", mesh.material.metallicMap, mesh.material.metallicPath);
                     loadMap("roughnessMap", mesh.material.roughnessMap, mesh.material.roughnessPath);
                     loadMap("aoMap", mesh.material.aoMap, mesh.material.aoPath);
                 }
 
-                // keep node.texturePath / node.textureID in sync with albedo for legacy billboard/sprite nodes
-                if (!n.model->meshes[0].material.albedoPath.empty()) {
+                if (!n.model->meshes[0].material.albedoPath.empty())
+                {
                     n.texturePath = n.model->meshes[0].material.albedoPath;
-                    n.textureID   = n.model->meshes[0].material.albedoMap;
+                    n.textureID = n.model->meshes[0].material.albedoMap;
                 }
             }
 

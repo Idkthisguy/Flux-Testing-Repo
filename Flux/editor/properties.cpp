@@ -229,13 +229,18 @@ void Properties::renderProperties(Heiarchy *h)
     if (ImGui::IsWindowHovered())
         ImGui::SetWindowFocus();
 
-    if (!h || h->selectedIndex < 0 || h->selectedIndex >= (int)h->nodes.size())
+    if (!h || h->selectedIndices.empty())
     {
         ImGui::TextDisabled("No object selected.");
     }
     else
     {
-        SceneNode &node = h->nodes[h->selectedIndex];
+        if (h->selectedIndices.size() > 1) {
+            ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.2f, 1.0f), "%d items selected. Editing primary.", (int)h->selectedIndices.size());
+        }
+
+        int primaryIndex = h->lastClickedIndex != -1 ? h->lastClickedIndex : h->selectedIndices.back();
+        SceneNode &node = h->nodes[primaryIndex];
 
         if (node.isLightingNode)
         {

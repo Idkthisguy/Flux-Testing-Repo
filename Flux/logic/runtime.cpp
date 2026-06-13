@@ -96,7 +96,14 @@ void Runtime::Start(const std::string &projectName, const std::filesystem::path 
         SceneNode newNode = node;
 
         if (node.model)
+        {
             newNode.model = std::make_shared<Model>(node.model->path);
+            
+            for (size_t i = 0; i < node.model->meshes.size() && i < newNode.model->meshes.size(); ++i)
+            {
+                newNode.model->meshes[i].material = node.model->meshes[i].material;
+            }
+        }
 
         if (!node.texturePath.empty())
         {

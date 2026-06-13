@@ -16,6 +16,12 @@ namespace Flux {
         std::vector<SceneNode> nodes;
         int selectedIndex = -1;
 
+        std::vector<int> selectedIndices;
+        int lastClickedIndex = -1;
+
+        bool isSelected(int index) const;
+        void selectNode(int index, bool ctrlDown, bool shiftDown);
+
         std::vector<std::vector<SceneNode>> undoStack;
         std::vector<std::vector<SceneNode>> redoStack;
 
