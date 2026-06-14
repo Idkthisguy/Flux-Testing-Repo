@@ -16,6 +16,15 @@ namespace Flux {
         std::vector<SceneNode> nodes;
         int selectedIndex = -1;
 
+        std::vector<int> selectedIndices;
+        int lastClickedIndex = -1;
+
+        bool isSelected(int index) const;
+        void selectNode(int index, bool ctrlDown, bool shiftDown);
+
+        std::vector<std::vector<SceneNode>> undoStack;
+        std::vector<std::vector<SceneNode>> redoStack;
+
         void setup();
         void renderHeiarchy(const std::filesystem::path& activeProjectPath);
 
@@ -28,9 +37,14 @@ namespace Flux {
 
         SceneNode* GetLightingNode();
 
+        void PushUndoState();
+        void Undo();
+        void Redo();
+
     private:
         int  renamingIndex     = -1;
         char renameBuffer[128] = {};
+        char searchBuffer[128] = {};
 
         std::unordered_map<std::string, std::shared_ptr<Model>> modelRegistry;
         std::shared_ptr<Model> GetOrLoadModel(const std::string& path);
