@@ -56,6 +56,10 @@ add_executable(Flux
         logic/data/material.h
         editor/themes/themes.h
         editor/themes/themes.cpp
+        core/Memory/linearAllocator.h
+        core/Memory/poolAllocator.h
+        core/Memory/stackAllocator.h
+        core/Memory/MemoryManager.h
 )
 
 get_filename_component(PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
