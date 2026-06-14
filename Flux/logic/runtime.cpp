@@ -387,6 +387,9 @@ void Runtime::Stop()
     if (!isRunning)
         return;
 
+    if (m_window)
+        SDL_SetWindowRelativeMouseMode(m_window, false);
+
     Output::addLog("Stopping runtime...");
 
     if (m_tempAllocator != nullptr && m_PhysicsSystem != nullptr)

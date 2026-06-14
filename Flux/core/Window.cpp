@@ -10,107 +10,10 @@
 #include <ShObjIdl.h>
 #include <propkey.h>
 
+#include "editor/themes/themes.h"
+
 namespace Flux
 {
-void SetStalkerTheme()
-{
-    ImGuiStyle& style = ImGui::GetStyle();
-
-    // Call StyleColorsDark first as Aurora's parent theme
-    ImGui::StyleColorsDark(&style);
-
-    // Apply Aurora Sizing Variables (from Style.hpp)
-    style.WindowPadding = ImVec2(10.0f, 10.0f);
-    style.FramePadding = ImVec2(20.0f, 8.0f);
-    style.ItemSpacing = ImVec2(10.0f, 8.0f);
-    style.ScrollbarSize = 17.0f;
-    style.ScrollbarRounding = 12.0f;
-    style.FrameRounding = 8.0f;
-    style.GrabRounding = 8.0f;
-    style.TabRounding = 8.0f;
-
-    // Set other roundings to follow the 8.0f standard
-    style.WindowRounding = 8.0f;
-    style.ChildRounding = 0.0f;
-    style.PopupRounding = 8.0f;
-
-    // Apply Border Sizes
-    style.WindowBorderSize = 1.0f;
-    style.ChildBorderSize = 1.0f;
-    style.PopupBorderSize = 1.0f;
-    style.FrameBorderSize = 1.0f;
-    style.TabBorderSize = 1.0f;
-
-    // Aurora Theme Colors
-    ImVec4 s_MainBgLight0 = ImVec4(0.404f, 0.404f, 0.404f, 1.0f);
-    ImVec4 s_MainBg      = ImVec4(0.21f, 0.21f, 0.21f, 1.0f);
-    ImVec4 s_MainBgDark0  = ImVec4(0.190f, 0.190f, 0.190f, 1.0f);
-    ImVec4 s_MainBgDark1  = ImVec4(0.145f, 0.145f, 0.145f, 1.0f);
-    ImVec4 s_MainBgDark2  = ImVec4(0.098f, 0.098f, 0.098f, 1.0f);
-
-    ImVec4 s_Accent      = ImVec4(0.149f, 0.149f, 0.149f, 1.0f);
-    ImVec4 s_AccentDark0 = ImVec4(0.102f, 0.102f, 0.102f, 1.0f);
-    ImVec4 s_AccentDark1 = ImVec4(0.063f, 0.063f, 0.063f, 1.0f);
-
-    ImVec4 s_Button      = ImVec4(0.882f, 0.882f, 0.882f, 1.0f);
-    ImVec4 s_ButtonHovered = ImVec4(0.782f, 0.782f, 0.782f, 1.0f);
-
-    ImVec4 s_Header      = ImVec4(0.338f, 0.338f, 0.338f, 1.0f);
-    ImVec4 s_HeaderHovered = ImVec4(0.276f, 0.276f, 0.276f, 1.0f);
-    ImVec4 s_HeaderActive  = ImVec4(0.379f, 0.379f, 0.379f, 1.0f);
-
-    ImVec4 s_Font        = ImVec4(0.902f, 0.902f, 0.902f, 1.0f);
-    ImVec4 s_FontDisabled = ImVec4(0.36f, 0.36f, 0.36f, 1.0f);
-    ImVec4 s_HighlightColor = ImVec4(0.145f, 0.553f, 0.384f, 1.0f);
-
-    ImVec4* colors = style.Colors;
-
-    colors[ImGuiCol_WindowBg]             = s_MainBg;
-    colors[ImGuiCol_ChildBg]              = s_MainBg;
-
-    colors[ImGuiCol_Text]                 = s_Font;
-    colors[ImGuiCol_TextDisabled]         = s_FontDisabled;
-    colors[ImGuiCol_TextSelectedBg]       = s_HighlightColor;
-
-    colors[ImGuiCol_FrameBg]              = s_MainBgDark1;
-    colors[ImGuiCol_FrameBgHovered]       = s_MainBgDark0;
-    colors[ImGuiCol_FrameBgActive]        = s_MainBgDark2;
-
-    colors[ImGuiCol_TitleBg]              = s_MainBgDark0;
-    colors[ImGuiCol_TitleBgCollapsed]     = s_MainBgDark0;
-    colors[ImGuiCol_TitleBgActive]        = s_MainBgDark0;
-    colors[ImGuiCol_MenuBarBg]            = s_AccentDark0;
-
-    colors[ImGuiCol_Tab]                  = s_MainBgDark0;
-    colors[ImGuiCol_TabUnfocused]         = s_MainBgDark0;
-    colors[ImGuiCol_TabHovered]           = s_MainBgDark1;
-    colors[ImGuiCol_TabActive]            = s_MainBgDark1;
-    colors[ImGuiCol_TabUnfocusedActive]   = s_MainBgDark1;
-
-    colors[ImGuiCol_ScrollbarBg]          = s_MainBgDark1;
-    colors[ImGuiCol_ScrollbarGrab]        = s_Font;
-    colors[ImGuiCol_ScrollbarGrabActive]  = s_FontDisabled;
-    colors[ImGuiCol_ScrollbarGrabHovered] = s_FontDisabled;
-    colors[ImGuiCol_CheckMark]            = s_Font;
-    colors[ImGuiCol_SliderGrab]           = s_Font;
-    colors[ImGuiCol_SliderGrabActive]     = s_FontDisabled;
-
-    colors[ImGuiCol_Header]               = s_Header;
-    colors[ImGuiCol_HeaderHovered]        = s_HeaderHovered;
-    colors[ImGuiCol_HeaderActive]         = s_HeaderActive;
-
-    colors[ImGuiCol_Separator]            = s_MainBgLight0;
-    colors[ImGuiCol_SeparatorHovered]     = s_MainBgLight0;
-    colors[ImGuiCol_SeparatorActive]      = s_MainBgLight0;
-    colors[ImGuiCol_Border]               = s_MainBgLight0;
-
-    colors[ImGuiCol_ResizeGrip]           = s_MainBg;
-    colors[ImGuiCol_ResizeGripHovered]    = s_MainBg;
-    colors[ImGuiCol_ResizeGripActive]     = s_MainBg;
-
-    colors[ImGuiCol_DockingPreview]       = s_AccentDark0;
-    colors[ImGuiCol_NavHighlight]         = s_AccentDark0;
-}
 
 Window::Window(int width, int height, const std::string &title) : m_width(width), m_height(height), m_title(title)
 {
@@ -242,7 +145,7 @@ Window::Window(int width, int height, const std::string &title) : m_width(width)
     ImGui_ImplSDL3_InitForOpenGL(m_window, m_glContext);
     ImGui_ImplOpenGL3_Init("#version 410");
 
-    SetStalkerTheme();
+    ApplyTheme(m_ribbon.GetTheme());
 
     m_viewport.Init();
     m_heiarchy.setup();
@@ -390,12 +293,6 @@ void Window::update()
 
         if (event.type == SDL_EVENT_KEY_DOWN)
         {
-
-            if (event.key.key == SDLK_ESCAPE)
-            {
-                m_shouldClose = true;
-            }
-
             if (io.WantCaptureKeyboard)
             {
 

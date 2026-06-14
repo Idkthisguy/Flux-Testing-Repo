@@ -54,6 +54,8 @@ add_executable(Flux
         logic/PhysicsLayer.h
         resource.rc
         logic/data/material.h
+        editor/themes/themes.h
+        editor/themes/themes.cpp
 )
 
 get_filename_component(PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)

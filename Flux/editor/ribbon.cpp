@@ -9,9 +9,10 @@
 #include <cctype>
 #include <iostream>
 
+#include "themes/themes.h"
+
 namespace Flux
 {
-void SetStalkerTheme();
 int currentTool = 0;
 bool showSettings = false;
 
@@ -164,14 +165,9 @@ void Ribbon::renderRibbon()
 
         ImGui::Separator();
         ImGui::Text("Editor Appearance");
-        if (ImGui::Combo("Theme", &theme, "Dark Mode\0Light Mode\0Classic\0"))
+        if (ImGui::Combo("Theme", &theme, "Default (Dark)\0Light\0Classic\0Legacy\0"))
         {
-            if (theme == 0)
-                SetStalkerTheme();
-            if (theme == 1)
-                ImGui::StyleColorsLight();
-            if (theme == 2)
-                ImGui::StyleColorsClassic();
+            ApplyTheme(theme);
         }
 
         if (ImGui::Button("Save Preferences"))

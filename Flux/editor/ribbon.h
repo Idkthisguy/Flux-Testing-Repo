@@ -55,6 +55,7 @@ namespace Flux {
 
 			void LoadPreferences();
 			void SavePreferences();
+			int GetTheme() const { return theme; }
 			void SaveProjectSettings(const std::filesystem::path& projectRoot);
 			void LoadProjectSettings(const std::filesystem::path& projectRoot);
 

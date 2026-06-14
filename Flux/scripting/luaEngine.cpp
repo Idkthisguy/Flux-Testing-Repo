@@ -79,6 +79,14 @@ void LuaEngine::init()
 
     sol::table inputTable = lua.create_table();
 
+    inputTable["setMouseLock"] = [](bool locked) {
+        SDL_Window *currentWindow = SDL_GetKeyboardFocus();
+        if (currentWindow)
+        {
+            SDL_SetWindowRelativeMouseMode(currentWindow, locked ? true : false);
+        }
+    };
+
     inputTable["isKeyDown"] = [](const std::string &key) -> bool {
         const bool *state = SDL_GetKeyboardState(nullptr);
         SDL_Scancode sc = SDL_GetScancodeFromName(key.c_str());
@@ -119,11 +127,58 @@ void LuaEngine::init()
         return y;
     };
 
+    inputTable["getMouseDeltaX"] = []() -> float {
+        float x = 0.0f;
+        SDL_GetRelativeMouseState(&x, nullptr);
+        return x;
+    };
+
+    inputTable["getMouseDeltaY"] = []() -> float {
+        float y = 0.0f;
+        SDL_GetRelativeMouseState(nullptr, &y);
+        return y;
+    };
+
     inputTable["isMouseDown"] = [](int buttonIndex) -> bool {
         return (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON_MASK(buttonIndex)) != 0;
     };
 
     lua["Input"] = inputTable;
+
+    sol::table taskTable = lua.create_table();
+
+    taskTable["delay"] = [this](float seconds, sol::protected_function fn) -> int {
+        int handle = m_nextTaskHandle++;
+        m_delayedTasks.push_back({handle, seconds, std::move(fn), false});
+        return handle;
+    };
+
+    taskTable["spawn"] = [this](sol::protected_function fn) -> int {
+        int handle = m_nextTaskHandle++;
+
+        sol::thread runner = sol::thread::create(lua.lua_state());
+        sol::coroutine co(runner.state(), fn);
+
+        m_spawnedTasks.push_back({handle, std::move(runner), std::move(co), false});
+        return handle;
+    };
+
+    taskTable["stop"] = [this](int handle) {
+        for (auto &t : m_delayedTasks)
+            if (t.handle == handle)
+            {
+                t.cancelled = true;
+                return;
+            }
+        for (auto &t : m_spawnedTasks)
+            if (t.handle == handle)
+            {
+                t.cancelled = true;
+                return;
+            }
+    };
+
+    lua["Task"] = taskTable;
 }
 
 void LuaEngine::runScript(const std::string &code)
@@ -178,7 +233,69 @@ void LuaEngine::runScript(const std::string &code)
 
 void LuaEngine::step()
 {
-    if (!isRunning || m_updateFuncs.empty())
+    if (!isRunning)
+        return;
+
+    float dt = ImGui::GetIO().DeltaTime;
+
+    size_t delayCount = m_delayedTasks.size();
+    for (size_t i = 0; i < delayCount; ++i)
+    {
+        if (m_delayedTasks[i].cancelled)
+            continue;
+        m_delayedTasks[i].remaining -= dt;
+        if (m_delayedTasks[i].remaining <= 0.f)
+        {
+            m_delayedTasks[i].cancelled = true;
+            if (m_delayedTasks[i].fn.valid())
+            {
+                auto result = m_delayedTasks[i].fn();
+                if (!result.valid())
+                {
+                    sol::error err = result;
+                    Output::addLog("[TASK DELAY ERROR] " + std::string(err.what()));
+                    isRunning = false;
+                    stop();
+                    return;
+                }
+            }
+        }
+    }
+
+    m_delayedTasks.erase(
+        std::remove_if(m_delayedTasks.begin(), m_delayedTasks.end(), [](const DelayedTask &t) { return t.cancelled; }),
+        m_delayedTasks.end());
+
+    size_t spawnCount = m_spawnedTasks.size();
+    for (size_t i = 0; i < spawnCount; ++i)
+    {
+        if (m_spawnedTasks[i].cancelled)
+            continue;
+        if (!m_spawnedTasks[i].co.valid())
+        {
+            m_spawnedTasks[i].cancelled = true;
+            continue;
+        }
+
+        auto result = m_spawnedTasks[i].co();
+        if (!result.valid())
+        {
+            sol::error err = result;
+            Output::addLog("[TASK SPAWN ERROR] " + std::string(err.what()));
+            isRunning = false;
+            stop();
+            return;
+        }
+
+        if (m_spawnedTasks[i].co.status() == sol::call_status::ok)
+            m_spawnedTasks[i].cancelled = true;
+    }
+
+    m_spawnedTasks.erase(
+        std::remove_if(m_spawnedTasks.begin(), m_spawnedTasks.end(), [](const SpawnedTask &t) { return t.cancelled; }),
+        m_spawnedTasks.end());
+
+    if (m_updateFuncs.empty())
         return;
 
     for (size_t i = 0; i < m_updateFuncs.size(); ++i)
@@ -214,6 +331,9 @@ void LuaEngine::stop()
     m_startFuncs.clear();
     m_updateFuncs.clear();
     m_environments.clear();
+
+    m_delayedTasks.clear();
+    m_spawnedTasks.clear();
 
     lua = sol::state{};
 }
