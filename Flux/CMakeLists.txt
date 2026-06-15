@@ -56,9 +56,9 @@ add_executable(Flux
         logic/data/material.h
         editor/themes/themes.h
         editor/themes/themes.cpp
-        core/Memory/linearAllocator.h
-        core/Memory/poolAllocator.h
-        core/Memory/stackAllocator.h
+        core/Memory/allocators/linearAllocator.h
+        core/Memory/allocators/poolAllocator.h
+        core/Memory/allocators/stackAllocator.h
         core/Memory/MemoryManager.h
 )
 

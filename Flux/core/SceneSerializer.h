@@ -175,7 +175,7 @@ class SceneSerializer
                 n.textureID = TextureLoader::Load(absoluteTex.string());
 
                 unsigned int id = TextureLoader::Load(absoluteTex.string());
-                Output::addLog("Loaded texture: " + absoluteTex.string() + " -> ID " + std::to_string(id));
+                //Output::addLog("Loaded texture: " + absoluteTex.string() + " -> ID " + std::to_string(id));
                 n.textureID = id;
             }
 
