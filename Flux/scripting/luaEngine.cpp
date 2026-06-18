@@ -33,7 +33,29 @@ void LuaEngine::bindEngineAPI()
         sol::property([](SceneNode &n) { return n.baseColor; },
                       [](SceneNode &n, const glm::vec3 &v) { n.baseColor = v; }),
         "roughness", &SceneNode::roughness, "metallic", &SceneNode::metallic, "isAnchored", &SceneNode::isAnchored,
-        "isLocked", &SceneNode::isLocked, "fov", &SceneNode::fov, "isMainCamera", &SceneNode::isMainCamera);
+        "isLocked", &SceneNode::isLocked, "fov", &SceneNode::fov, "isMainCamera", &SceneNode::isMainCamera,
+
+        "isIndependent", &SceneNode::isIndependent,
+    
+        "getWorldPosition", [this](SceneNode& n) -> glm::vec3 {
+            glm::mat4 w = n.GetWorldTransform(*activeNodes);
+            return glm::vec3(w[3]); // 4th column is position
+        },
+        
+        "getParent", [this](SceneNode& n) -> SceneNode* {
+            if (n.parentIndex != -1 && n.parentIndex < activeNodes->size()) {
+                return &(*activeNodes)[n.parentIndex];
+            }
+            return nullptr;
+        },
+        "setParent", [this](SceneNode& child, SceneNode& newParent) {
+            auto it = std::find_if(activeNodes->begin(), activeNodes->end(), 
+                [&](const SceneNode& node) { return &node == &newParent; });
+            if (it != activeNodes->end()) {
+                child.parentIndex = std::distance(activeNodes->begin(), it);
+            }
+        }
+    );
 
     sol::table engineTable = lua.create_table();
 
@@ -243,17 +265,28 @@ void LuaEngine::step()
     {
         if (m_delayedTasks[i].cancelled)
             continue;
+
         m_delayedTasks[i].remaining -= dt;
         if (m_delayedTasks[i].remaining <= 0.f)
         {
             m_delayedTasks[i].cancelled = true;
             if (m_delayedTasks[i].fn.valid())
             {
-                auto result = m_delayedTasks[i].fn();
-                if (!result.valid())
+                bool hasError = false;
                 {
-                    sol::error err = result;
-                    Output::addLog("[TASK DELAY ERROR] " + std::string(err.what()));
+
+                    auto funcCopy = m_delayedTasks[i].fn;
+                    auto result = funcCopy();
+                    if (!result.valid())
+                    {
+                        sol::error err = result;
+                        Output::addLog("[TASK DELAY ERROR] " + std::string(err.what()));
+                        hasError = true;
+                    }
+                }
+
+                if (hasError)
+                {
                     isRunning = false;
                     stop();
                     return;
@@ -277,18 +310,27 @@ void LuaEngine::step()
             continue;
         }
 
-        auto result = m_spawnedTasks[i].co();
-        if (!result.valid())
+        bool hasError = false;
         {
-            sol::error err = result;
-            Output::addLog("[TASK SPAWN ERROR] " + std::string(err.what()));
+            auto result = m_spawnedTasks[i].co();
+            if (!result.valid())
+            {
+                sol::error err = result;
+                Output::addLog("[TASK SPAWN ERROR] " + std::string(err.what()));
+                hasError = true;
+            }
+            else if (m_spawnedTasks[i].co.status() == sol::call_status::ok)
+            {
+                m_spawnedTasks[i].cancelled = true;
+            }
+        }
+
+        if (hasError)
+        {
             isRunning = false;
             stop();
             return;
         }
-
-        if (m_spawnedTasks[i].co.status() == sol::call_status::ok)
-            m_spawnedTasks[i].cancelled = true;
     }
 
     m_spawnedTasks.erase(
@@ -303,17 +345,27 @@ void LuaEngine::step()
         if (!m_updateFuncs[i].valid())
             continue;
 
-        auto result = m_updateFuncs[i]();
-        if (!result.valid())
+        bool hasError = false;
         {
-            sol::error err = result;
-            sol::call_status status = result.status();
+            auto funcCopy = m_updateFuncs[i];
+            auto result = funcCopy();
 
-            if (status == sol::call_status::runtime)
-                Output::addLog("[USER SCRIPT ERROR] " + std::string(err.what()));
-            else
-                Output::addLog("[ENGINE BINDING ERROR] C++ failed to execute: " + std::string(err.what()));
+            if (!result.valid())
+            {
+                sol::error err = result;
+                sol::call_status status = result.status();
 
+                if (status == sol::call_status::runtime)
+                    Output::addLog("[USER SCRIPT ERROR] " + std::string(err.what()));
+                else
+                    Output::addLog("[ENGINE BINDING ERROR] C++ failed to execute: " + std::string(err.what()));
+
+                hasError = true;
+            }
+        }
+
+        if (hasError)
+        {
             isRunning = false;
             stop();
             return;

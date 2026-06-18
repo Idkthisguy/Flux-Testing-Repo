@@ -16,7 +16,8 @@ static bool HasRealAlpha(const unsigned char *data, int w, int h)
 }
 
 static unsigned int LoadMaterialTextures(aiMaterial *mat, aiTextureType type, const aiScene *scene,
-                                         const std::filesystem::path &modelDir, bool &outHasAlpha)
+                                         const std::string &modelPath, const std::filesystem::path &modelDir,
+                                         bool &outHasAlpha)
 {
     aiString texPath;
     if (mat->GetTexture(type, 0, &texPath) != AI_SUCCESS)
@@ -29,45 +30,17 @@ static unsigned int LoadMaterialTextures(aiMaterial *mat, aiTextureType type, co
     const aiTexture *aitex = scene->GetEmbeddedTexture(rawPath.c_str());
     if (aitex)
     {
+        std::string cacheKey = modelPath + "#" + rawPath;
+
         if (aitex->mHeight == 0)
         {
-            stbi_set_flip_vertically_on_load(false);
-            int w, h, ch;
-            unsigned char *data = stbi_load_from_memory(reinterpret_cast<const unsigned char *>(aitex->pcData),
-                                                        (int)aitex->mWidth, &w, &h, &ch, 4);
-
-            if (data)
-            {
-                unsigned int id;
-                glGenTextures(1, &id);
-                glBindTexture(GL_TEXTURE_2D, id);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-                glGenerateMipmap(GL_TEXTURE_2D);
-
-                outHasAlpha = HasRealAlpha(data, w, h);
-                stbi_image_free(data);
-
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                return id;
-            }
+            return TextureLoader::LoadFromMemory(cacheKey, reinterpret_cast<const unsigned char *>(aitex->pcData),
+                                                  (size_t)aitex->mWidth, &outHasAlpha);
         }
         else
         {
-            int w = (int)aitex->mWidth;
-            int h = (int)aitex->mHeight;
-            unsigned int id;
-            glGenTextures(1, &id);
-            glBindTexture(GL_TEXTURE_2D, id);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, aitex->pcData);
-            glGenerateMipmap(GL_TEXTURE_2D);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            return id;
+            return TextureLoader::LoadFromMemoryRaw(cacheKey, reinterpret_cast<const unsigned char *>(aitex->pcData),
+                                                     (int)aitex->mWidth, (int)aitex->mHeight, GL_BGRA);
         }
     }
     else
@@ -81,6 +54,18 @@ static unsigned int LoadMaterialTextures(aiMaterial *mat, aiTextureType type, co
             std::string justName = std::filesystem::path(rawPath).filename().string();
             texStr = (modelDir / justName).string();
             std::replace(texStr.begin(), texStr.end(), '\\', '/');
+
+            if (!std::filesystem::exists(texStr))
+            {
+                std::filesystem::path fbmDir =
+                    modelDir / (std::filesystem::path(modelPath).stem().string() + ".fbm");
+                std::filesystem::path fbmPath = fbmDir / justName;
+                if (std::filesystem::exists(fbmPath))
+                {
+                    texStr = fbmPath.string();
+                    std::replace(texStr.begin(), texStr.end(), '\\', '/');
+                }
+            }
         }
 
         unsigned int id = TextureLoader::Load(texStr);
@@ -100,7 +85,6 @@ static unsigned int LoadMaterialTextures(aiMaterial *mat, aiTextureType type, co
         }
         return id;
     }
-    return 0;
 }
 
 Model::~Model()
@@ -209,22 +193,27 @@ void Model::Load()
 
             myMesh.material.baseColor = myMesh.matColor;
 
-            myMesh.textureID = LoadMaterialTextures(mat, aiTextureType_DIFFUSE, scene, modelDir, myMesh.hasAlpha);
+            myMesh.textureID = LoadMaterialTextures(mat, aiTextureType_DIFFUSE, scene, path, modelDir, myMesh.hasAlpha);
 
-            myMesh.material.normalMap = LoadMaterialTextures(mat, aiTextureType_NORMALS, scene, modelDir, dummyAlpha);
+            myMesh.material.normalMap = LoadMaterialTextures(mat, aiTextureType_NORMALS, scene, path, modelDir, dummyAlpha);
+            if (myMesh.material.normalMap == 0)
+            {
+                myMesh.material.normalMap =
+                    LoadMaterialTextures(mat, aiTextureType_HEIGHT, scene, path, modelDir, dummyAlpha);
+            }
             myMesh.material.metallicMap =
-                LoadMaterialTextures(mat, aiTextureType_METALNESS, scene, modelDir, dummyAlpha);
+                LoadMaterialTextures(mat, aiTextureType_METALNESS, scene, path, modelDir, dummyAlpha);
             myMesh.material.roughnessMap =
-                LoadMaterialTextures(mat, aiTextureType_DIFFUSE_ROUGHNESS, scene, modelDir, dummyAlpha);
+                LoadMaterialTextures(mat, aiTextureType_DIFFUSE_ROUGHNESS, scene, path, modelDir, dummyAlpha);
             if (myMesh.material.roughnessMap == 0)
             {
                 myMesh.material.roughnessMap =
-                    LoadMaterialTextures(mat, aiTextureType_SHININESS, scene, modelDir, dummyAlpha);
+                    LoadMaterialTextures(mat, aiTextureType_SHININESS, scene, path, modelDir, dummyAlpha);
             }
-            myMesh.material.aoMap = LoadMaterialTextures(mat, aiTextureType_AMBIENT, scene, modelDir, dummyAlpha);
+            myMesh.material.aoMap = LoadMaterialTextures(mat, aiTextureType_AMBIENT, scene, path, modelDir, dummyAlpha);
             /*myMesh.material.dispMap =
-                LoadMaterialTextures(mat, aiTextureType_DISPLACEMENT, scene, modelDir, dummyAlpha);
-            myMesh.material.alphaMap = LoadMaterialTextures(mat, aiTextureType_OPACITY, scene, modelDir, dummyAlpha);*/
+                LoadMaterialTextures(mat, aiTextureType_DISPLACEMENT, scene, path, modelDir, dummyAlpha);
+            myMesh.material.alphaMap = LoadMaterialTextures(mat, aiTextureType_OPACITY, scene, path, modelDir, dummyAlpha);*/
 
             float opacity = 1.0f;
             mat->Get(AI_MATKEY_OPACITY, opacity);
@@ -240,8 +229,8 @@ void Model::Load()
             myMesh.material.albedoMap = myMesh.textureID;
             myMesh.hasMtlColor = true;
 
-            mat->Get(AI_MATKEY_METALLIC_FACTOR, myMesh.material.metallicMap);
-            mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, myMesh.material.roughnessMap);
+            mat->Get(AI_MATKEY_METALLIC_FACTOR, myMesh.material.metallic);
+            mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, myMesh.material.roughness);
         }
 
         glGenVertexArrays(1, &myMesh.VAO);

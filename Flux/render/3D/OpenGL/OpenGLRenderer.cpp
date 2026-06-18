@@ -164,7 +164,7 @@ void Renderer3D::DrawDepthPass(const std::vector<SceneNode> &nodes, glm::vec3 li
     {
         if (node.type != NodeType::Mesh || !node.model)
             continue;
-        setMat4(depthProgram, "model", node.GetTransformMatrix());
+        setMat4(depthProgram, "model", node.GetWorldTransform(nodes));
         for (auto &mesh : node.model->meshes)
         {
             glBindVertexArray(mesh.VAO);

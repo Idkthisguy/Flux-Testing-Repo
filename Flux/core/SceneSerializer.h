@@ -95,6 +95,9 @@ class SceneSerializer
                 n["aoMap"] = mat.aoPath.empty() ? "" : std::filesystem::relative(mat.aoPath, projectRoot).string();
             }
 
+            n["parentIndex"] = node.parentIndex;
+            n["isIndependent"] = node.isIndependent;
+
             j["nodes"].push_back(n);
         }
         j["version"] = 2;
@@ -175,7 +178,7 @@ class SceneSerializer
                 n.textureID = TextureLoader::Load(absoluteTex.string());
 
                 unsigned int id = TextureLoader::Load(absoluteTex.string());
-                Output::addLog("Loaded texture: " + absoluteTex.string() + " -> ID " + std::to_string(id));
+                // Output::addLog("Loaded texture: " + absoluteTex.string() + " -> ID " + std::to_string(id));
                 n.textureID = id;
             }
 
@@ -253,6 +256,9 @@ class SceneSerializer
                     n.textureID = n.model->meshes[0].material.albedoMap;
                 }
             }
+
+            n.parentIndex = jNode.value("parentIndex", -1);
+            n.isIndependent = jNode.value("isIndependent", false);
 
             h.nodes.push_back(n);
         }

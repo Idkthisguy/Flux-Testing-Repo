@@ -267,18 +267,7 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
     {
         if (!heiarchy.selectedIndices.empty())
         {
-            heiarchy.PushUndoState();
-            std::vector<int> toDelete = heiarchy.selectedIndices;
-            std::sort(toDelete.rbegin(), toDelete.rend());
-            for (int idx : toDelete)
-            {
-                if (idx >= 0 && idx < (int)heiarchy.nodes.size() && !heiarchy.nodes[idx].isLightingNode)
-                {
-                    heiarchy.nodes.erase(heiarchy.nodes.begin() + idx);
-                }
-            }
-            heiarchy.selectedIndices.clear();
-            heiarchy.lastClickedIndex = -1;
+            heiarchy.pendingDelete = true;
         }
     }
 
@@ -333,9 +322,9 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
             continue;
         if (node.type == NodeType::Camera)
             continue;
-        renderer->DrawScene(*node.model, node.textureID, node.GetTransformMatrix(), view, proj, camera->Position,
-                            heiarchy.nodes, 1.0f, node.roughness, node.metallic, timeOfDay, node.baseColor,
-                            node.textureScale, node.pixelated);
+        renderer->DrawScene(*node.model, node.textureID, node.GetWorldTransform(heiarchy.nodes), view, proj,
+                            camera->Position, heiarchy.nodes, 1.0f, node.roughness, node.metallic, timeOfDay,
+                            node.baseColor, node.textureScale, node.pixelated);
     }
     if (isDraggingModel && ghostModel)
     {
@@ -387,7 +376,7 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
             int nodeIdx = &node - &heiarchy.nodes[0];
             bool selected = heiarchy.isSelected(nodeIdx);
             ImU32 col = selected ? IM_COL32(255, 230, 0, 255) : IM_COL32(0, 210, 255, 200);
-            CameraGizmoRenderer::Draw(node.GetTransformMatrix(), view, proj, imagePos, sz, node.fov, col);
+            CameraGizmoRenderer::Draw(node.GetWorldTransform(heiarchy.nodes), view, proj, imagePos, sz, node.fov, col);
         }
     }
 
@@ -525,10 +514,11 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
                     op = ImGuizmo::SCALE;
 
                 auto &target = heiarchy.nodes[sel];
-                glm::mat4 mm = target.GetTransformMatrix();
+                glm::mat4 worldMat = target.GetWorldTransform(heiarchy.nodes);
+
                 ImGuizmo::AllowAxisFlip(false);
                 ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), op, ImGuizmo::LOCAL,
-                                     glm::value_ptr(mm));
+                                     glm::value_ptr(worldMat));
 
                 static bool wasUsingGizmo = false;
                 if (ImGuizmo::IsUsing())
@@ -538,12 +528,24 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
                         heiarchy.PushUndoState();
                         wasUsingGizmo = true;
                     }
+
+                    glm::mat4 localMat = worldMat;
+                    if (target.parentIndex != -1)
+                    {
+                        const auto &parent = heiarchy.nodes[target.parentIndex];
+                        if (parent.type != NodeType::Folder && !target.isIndependent)
+                        {
+                            glm::mat4 parentWorld = parent.GetWorldTransform(heiarchy.nodes);
+                            localMat = glm::inverse(parentWorld) * worldMat;
+                        }
+                    }
+
                     float t[3], r[3], s[3];
-                    ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(mm), t, r, s);
+                    ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(localMat), t, r, s);
                     target.position = {t[0], t[1], t[2]};
                     target.scale = {s[0], s[1], s[2]};
 
-                    if (target.type == NodeType::Mesh)
+                    if (target.type == NodeType::Mesh || target.type == NodeType::Empty)
                     {
                         target.rotation = {r[0], r[1], r[2]};
                     }

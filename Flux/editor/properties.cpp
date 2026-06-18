@@ -235,8 +235,10 @@ void Properties::renderProperties(Heiarchy *h)
     }
     else
     {
-        if (h->selectedIndices.size() > 1) {
-            ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.2f, 1.0f), "%d items selected. Editing primary.", (int)h->selectedIndices.size());
+        if (h->selectedIndices.size() > 1)
+        {
+            ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.2f, 1.0f), "%d items selected. Editing primary.",
+                               (int)h->selectedIndices.size());
         }
 
         int primaryIndex = h->lastClickedIndex != -1 ? h->lastClickedIndex : h->selectedIndices.back();
@@ -333,14 +335,45 @@ void Properties::renderProperties(Heiarchy *h)
         }
         else
         {
-            ImGui::Text("Transform");
+            ImGui::Text("Local Transform");
             ImGui::Spacing();
-            if (BeginTable2Col("##t_transform"))
+            if (BeginTable2Col("##t_transform_local"))
             {
                 DragVec3Row("Position", node.position, 0.1f, h);
                 DragVec3Row("Rotation", node.rotation, 0.5f, h);
                 DragVec3Row("Scale", node.scale, 0.01f, h);
                 ImGui::EndTable();
+            }
+
+            if (node.parentIndex != -1)
+            {
+                ImGui::Separator();
+                ImGui::Text("Absolute Transform (Read-Only)");
+                glm::mat4 worldMat = node.GetWorldTransform(h->nodes);
+                float t[3], r[3], s[3];
+                ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(worldMat), t, r, s);
+
+                ImGui::BeginDisabled();
+                if (BeginTable2Col("##t_transform_world"))
+                {
+                    glm::vec3 wt(t[0], t[1], t[2]);
+                    glm::vec3 wr(r[0], r[1], r[2]);
+                    DragVec3Row("World Pos", wt);
+                    DragVec3Row("World Rot", wr);
+                    ImGui::EndTable();
+                }
+                ImGui::EndDisabled();
+
+                if (h->nodes[node.parentIndex].type == NodeType::Empty)
+                {
+                    ImGui::Separator();
+                    if (ImGui::Checkbox("Independent", &node.isIndependent))
+                    {
+                        h->PushUndoState();
+                    }
+                    ImGui::SameLine();
+                    ImGui::TextDisabled("(Ignores Empty Parent)");
+                }
             }
 
             if (node.type == NodeType::Camera)
