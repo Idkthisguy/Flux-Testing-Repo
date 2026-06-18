@@ -33,7 +33,29 @@ void LuaEngine::bindEngineAPI()
         sol::property([](SceneNode &n) { return n.baseColor; },
                       [](SceneNode &n, const glm::vec3 &v) { n.baseColor = v; }),
         "roughness", &SceneNode::roughness, "metallic", &SceneNode::metallic, "isAnchored", &SceneNode::isAnchored,
-        "isLocked", &SceneNode::isLocked, "fov", &SceneNode::fov, "isMainCamera", &SceneNode::isMainCamera);
+        "isLocked", &SceneNode::isLocked, "fov", &SceneNode::fov, "isMainCamera", &SceneNode::isMainCamera,
+
+        "isIndependent", &SceneNode::isIndependent,
+    
+        "getWorldPosition", [this](SceneNode& n) -> glm::vec3 {
+            glm::mat4 w = n.GetWorldTransform(*activeNodes);
+            return glm::vec3(w[3]); // 4th column is position
+        },
+        
+        "getParent", [this](SceneNode& n) -> SceneNode* {
+            if (n.parentIndex != -1 && n.parentIndex < activeNodes->size()) {
+                return &(*activeNodes)[n.parentIndex];
+            }
+            return nullptr;
+        },
+        "setParent", [this](SceneNode& child, SceneNode& newParent) {
+            auto it = std::find_if(activeNodes->begin(), activeNodes->end(), 
+                [&](const SceneNode& node) { return &node == &newParent; });
+            if (it != activeNodes->end()) {
+                child.parentIndex = std::distance(activeNodes->begin(), it);
+            }
+        }
+    );
 
     sol::table engineTable = lua.create_table();
 

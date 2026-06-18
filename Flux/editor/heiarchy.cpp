@@ -27,6 +27,10 @@ static const char *NodeTypeLabel(NodeType t)
         return "[Spot] ";
     case NodeType::SurfaceLight:
         return "[Surf] ";
+    case NodeType::Folder:
+        return "[Folder]";
+    case NodeType::Empty:
+        return "[Empty]";
     default:
         return "[Mesh] ";
     }
@@ -40,6 +44,193 @@ std::shared_ptr<Model> Heiarchy::GetOrLoadModel(const std::string &path)
     auto m = std::make_shared<Model>(path);
     modelRegistry[path] = m;
     return m;
+}
+
+void Heiarchy::FixIndicesAfterRemoval(int removedIndex)
+{
+    for (auto &n : nodes)
+    {
+        if (n.parentIndex == removedIndex)
+        {
+            n.parentIndex = -1;
+        }
+        else if (n.parentIndex > removedIndex)
+        {
+            n.parentIndex--;
+        }
+    }
+}
+
+void Heiarchy::proccessPendingDeletes()
+{
+    if (!pendingDelete)
+        return;
+
+    PushUndoState();
+
+    std::vector<int> toDelete = selectedIndices;
+    std::sort(toDelete.rbegin(), toDelete.rend());
+
+    for (int idx : toDelete)
+    {
+        if (idx >= 0 && idx < (int)nodes.size() && !nodes[idx].isLightingNode)
+        {
+            nodes.erase(nodes.begin() + idx);
+            FixIndicesAfterRemoval(idx);
+        }
+    }
+
+    selectedIndices.clear();
+    lastClickedIndex = -1;
+    pendingDelete = false;
+}
+
+bool AlphanumCompare(const std::string &a, const std::string &b)
+{
+    int i = 0, j = 0;
+    while (i < a.length() && j < b.length())
+    {
+        if (std::isdigit(a[i]) && std::isdigit(b[j]))
+        {
+            int numA = 0, numB = 0;
+            while (i < a.length() && std::isdigit(a[i]))
+            {
+                numA = numA * 10 + (a[i] - '0');
+                i++;
+            }
+            while (j < b.length() && std::isdigit(b[j]))
+            {
+                numB = numB * 10 + (b[j] - '0');
+                j++;
+            }
+            if (numA != numB)
+                return numA < numB;
+        }
+        else
+        {
+            if (a[i] != b[j])
+                return a[i] < b[j];
+            i++;
+            j++;
+        }
+    }
+    return a.length() < b.length();
+}
+
+void Heiarchy::BuildVisualOrder(int parentIndex, std::vector<int> &order) const
+{
+    std::vector<int> children;
+    for (int i = 0; i < (int)nodes.size(); i++)
+    {
+        if (nodes[i].parentIndex == parentIndex)
+            children.push_back(i);
+    }
+    std::sort(children.begin(), children.end(),
+              [&](int a, int b) { return AlphanumCompare(nodes[a].name, nodes[b].name); });
+    for (int c : children)
+    {
+        order.push_back(c);
+        BuildVisualOrder(c, order);
+    }
+}
+
+std::vector<int> Heiarchy::GetVisualOrder() const
+{
+    std::vector<int> order;
+    BuildVisualOrder(-1, order);
+    return order;
+}
+
+std::vector<int> Heiarchy::DuplicateNodeRecursive(int originalIndex, int newParentIndex)
+{
+    std::vector<int> duplicatedIndices;
+
+    SceneNode copy = nodes[originalIndex];
+
+    if (newParentIndex == nodes[originalIndex].parentIndex)
+    {
+        copy.name = GetUniqueName(copy.name);
+    }
+    copy.parentIndex = newParentIndex;
+    nodes.push_back(copy);
+
+    int newIndex = (int)nodes.size() - 1;
+    duplicatedIndices.push_back(newIndex);
+
+    std::vector<int> childrenToCopy;
+    for (int i = 0; i < (int)nodes.size() - 1; i++)
+    {
+        if (nodes[i].parentIndex == originalIndex)
+        {
+            childrenToCopy.push_back(i);
+        }
+    }
+
+    for (int childIdx : childrenToCopy)
+    {
+        std::vector<int> childDups = DuplicateNodeRecursive(childIdx, newIndex);
+        duplicatedIndices.insert(duplicatedIndices.end(), childDups.begin(), childDups.end());
+    }
+
+    return duplicatedIndices;
+}
+
+void Heiarchy::proccessPendingDuplicates()
+{
+    if (!pendingDuplicate)
+        return;
+    PushUndoState();
+
+    std::vector<int> newSelection;
+    std::vector<int> topLevelToDuplicate;
+
+    for (int idx : selectedIndices)
+    {
+        if (idx < 0 || idx >= (int)nodes.size() || nodes[idx].isLightingNode)
+            continue;
+
+        bool hasSelectedParent = false;
+        int p = nodes[idx].parentIndex;
+        while (p != -1)
+        {
+            if (std::find(selectedIndices.begin(), selectedIndices.end(), p) != selectedIndices.end())
+            {
+                hasSelectedParent = true;
+                break;
+            }
+            p = nodes[p].parentIndex;
+        }
+
+        if (!hasSelectedParent)
+        {
+            topLevelToDuplicate.push_back(idx);
+        }
+    }
+
+    for (int idx : topLevelToDuplicate)
+    {
+        std::vector<int> dups = DuplicateNodeRecursive(idx, nodes[idx].parentIndex);
+        if (!dups.empty())
+        {
+            newSelection.push_back(dups[0]);
+        }
+    }
+
+    selectedIndices = newSelection;
+    lastClickedIndex = newSelection.empty() ? -1 : newSelection.back();
+    pendingDuplicate = false;
+}
+
+bool Heiarchy::isDescendant(int nodeIndex, int potentialAncestorIndex) const
+{
+    int current = nodeIndex;
+    while (current != -1)
+    {
+        if (current == potentialAncestorIndex)
+            return true;
+        current = nodes[current].parentIndex;
+    }
+    return false;
 }
 
 SceneNode *Heiarchy::GetLightingNode()
@@ -57,10 +248,9 @@ bool Heiarchy::isSelected(int index) const
 
 void Heiarchy::selectNode(int index, bool ctrlDown, bool shiftDown)
 {
-    if (ctrlDown || shiftDown)
+    if (ctrlDown)
     {
         auto it = std::find(selectedIndices.begin(), selectedIndices.end(), index);
-
         if (it != selectedIndices.end())
             selectedIndices.erase(it);
         else
@@ -70,11 +260,22 @@ void Heiarchy::selectNode(int index, bool ctrlDown, bool shiftDown)
     }
     else if (shiftDown && lastClickedIndex != -1)
     {
-        selectedIndices.clear();
-        int start = std::min(lastClickedIndex, index);
-        int end = std::max(lastClickedIndex, index);
-        for (int i = start; i <= end; ++i)
-            selectedIndices.push_back(i);
+
+        std::vector<int> vOrder = GetVisualOrder();
+        auto it1 = std::find(vOrder.begin(), vOrder.end(), lastClickedIndex);
+        auto it2 = std::find(vOrder.begin(), vOrder.end(), index);
+
+        if (it1 != vOrder.end() && it2 != vOrder.end())
+        {
+            selectedIndices.clear();
+            int start = std::distance(vOrder.begin(), it1);
+            int end = std::distance(vOrder.begin(), it2);
+            if (start > end)
+                std::swap(start, end);
+
+            for (int i = start; i <= end; ++i)
+                selectedIndices.push_back(vOrder[i]);
+        }
     }
     else
     {
@@ -229,6 +430,30 @@ void Heiarchy::AddCamera(const std::string &name)
     lastClickedIndex = selectedIndices.back();
 }
 
+void Heiarchy::AddFolder(const std::string &name)
+{
+    PushUndoState();
+    SceneNode n;
+    n.type = NodeType::Folder;
+    n.name = GetUniqueName(name.empty() ? "New Folder" : name);
+    nodes.push_back(n);
+    selectedIndices.clear();
+    selectedIndices.push_back((int)nodes.size() - 1);
+    lastClickedIndex = selectedIndices.back();
+}
+
+void Heiarchy::AddEmpty(const std::string &name)
+{
+    PushUndoState();
+    SceneNode n;
+    n.type = NodeType::Empty;
+    n.name = GetUniqueName(name.empty() ? "Empty Object" : name);
+    nodes.push_back(n);
+    selectedIndices.clear();
+    selectedIndices.push_back((int)nodes.size() - 1);
+    lastClickedIndex = selectedIndices.back();
+}
+
 void Heiarchy::DrawNode(int index)
 {
     SceneNode &node = nodes[index];
@@ -270,7 +495,18 @@ void Heiarchy::DrawNode(int index)
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.26f, 0.59f, 0.98f, 0.55f));
     }
 
-    ImGui::TreeNodeEx(label.c_str(), flags);
+    bool hasChildren = false;
+    for (const auto &n : nodes)
+        if (n.parentIndex == index)
+            hasChildren = true;
+
+    ImGuiTreeNodeFlags treeFlags = ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_OpenOnArrow;
+    if (!hasChildren)
+        treeFlags |= ImGuiTreeNodeFlags_Leaf;
+    if (selected)
+        treeFlags |= ImGuiTreeNodeFlags_Selected;
+
+    bool nodeOpen = ImGui::TreeNodeEx(label.c_str(), treeFlags);
 
     if (selected)
         ImGui::PopStyleColor(2);
@@ -279,7 +515,17 @@ void Heiarchy::DrawNode(int index)
 
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
     {
-        selectNode(index, ImGui::GetIO().KeyCtrl, ImGui::GetIO().KeyShift);
+        if (!selected || ImGui::GetIO().KeyCtrl || ImGui::GetIO().KeyShift)
+        {
+            selectNode(index, ImGui::GetIO().KeyCtrl, ImGui::GetIO().KeyShift);
+        }
+    }
+    else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && !ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+    {
+        if (selected && !ImGui::GetIO().KeyCtrl && !ImGui::GetIO().KeyShift)
+        {
+            selectNode(index, false, false);
+        }
     }
 
     if (!node.isLightingNode && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
@@ -309,31 +555,13 @@ void Heiarchy::DrawNode(int index)
         {
             PushUndoState();
 
-            std::vector<int> sortedSel = selectedIndices;
-            std::sort(sortedSel.rbegin(), sortedSel.rend());
-
-            std::vector<SceneNode> extracted;
-            int insertAt = index;
-
-            for (int i : sortedSel)
+            for (int draggedIdx : selectedIndices)
             {
-                if (nodes[i].isLightingNode)
-                    continue;
-                extracted.push_back(nodes[i]);
-                nodes.erase(nodes.begin() + i);
-                if (i < insertAt)
-                    insertAt--;
+                if (draggedIdx != index && !isDescendant(index, draggedIdx))
+                {
+                    nodes[draggedIdx].parentIndex = index;
+                }
             }
-
-            std::reverse(extracted.begin(), extracted.end());
-            nodes.insert(nodes.begin() + insertAt, extracted.begin(), extracted.end());
-
-            selectedIndices.clear();
-            for (size_t i = 0; i < extracted.size(); ++i)
-            {
-                selectedIndices.push_back(insertAt + i);
-            }
-            lastClickedIndex = selectedIndices.empty() ? -1 : selectedIndices.back();
         }
         ImGui::EndDragDropTarget();
     }
@@ -357,39 +585,35 @@ void Heiarchy::DrawNode(int index)
             ImGui::Separator();
             if (ImGui::MenuItem("Delete"))
             {
-                PushUndoState();
-                std::vector<int> toDelete = selectedIndices;
-                std::sort(toDelete.rbegin(), toDelete.rend());
-                for (int idx : toDelete)
-                {
-                    if (idx >= 0 && idx < nodes.size())
-                        nodes.erase(nodes.begin() + idx);
-                }
-                selectedIndices.clear();
-                lastClickedIndex = -1;
-                ImGui::EndPopup();
-                return;
+                pendingDelete = true;
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Duplicate"))
             {
-                PushUndoState();
-                std::vector<int> newSelection;
-                for (int idx : selectedIndices)
-                {
-                    if (idx >= 0 && idx < nodes.size() && !nodes[idx].isLightingNode)
-                    {
-                        SceneNode copy = nodes[idx];
-                        copy.name = GetUniqueName(copy.name);
-                        nodes.push_back(copy);
-                        newSelection.push_back((int)nodes.size() - 1);
-                    }
-                }
-                selectedIndices = newSelection;
-                lastClickedIndex = newSelection.empty() ? -1 : newSelection.back();
+                pendingDuplicate = true;
             }
         }
         ImGui::EndPopup();
+    }
+
+    if (nodeOpen)
+    {
+        std::vector<int> childIndices;
+        for (int i = 0; i < (int)nodes.size(); i++)
+        {
+            if (nodes[i].parentIndex == index)
+                childIndices.push_back(i);
+        }
+
+        std::sort(childIndices.begin(), childIndices.end(),
+                  [&](int a, int b) { return AlphanumCompare(nodes[a].name, nodes[b].name); });
+
+        for (int childIdx : childIndices)
+        {
+            DrawNode(childIdx);
+        }
+
+        ImGui::TreePop();
     }
 }
 
@@ -417,18 +641,34 @@ void Heiarchy::renderHeiarchy(const std::filesystem::path &activeProjectPath)
     std::string searchStr = searchBuffer;
     std::transform(searchStr.begin(), searchStr.end(), searchStr.begin(), ::tolower);
 
-    for (int i = 0; i < (int)nodes.size(); i++)
+    if (searchStr.empty())
     {
-        if (!searchStr.empty())
+        std::vector<int> rootIndices;
+        for (int i = 0; i < (int)nodes.size(); i++)
+        {
+            if (nodes[i].parentIndex == -1)
+                rootIndices.push_back(i);
+        }
+
+        std::sort(rootIndices.begin(), rootIndices.end(),
+                  [&](int a, int b) { return AlphanumCompare(nodes[a].name, nodes[b].name); });
+
+        for (int rootIdx : rootIndices)
+        {
+            DrawNode(rootIdx);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < (int)nodes.size(); i++)
         {
             std::string nameLower = nodes[i].name;
             std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), ::tolower);
-            if (nameLower.find(searchStr) == std::string::npos)
+            if (nameLower.find(searchStr) != std::string::npos)
             {
-                continue;
+                DrawNode(i);
             }
         }
-        DrawNode(i);
     }
 
     float emptyH = std::max(ImGui::GetContentRegionAvail().y, 8.0f);
@@ -436,13 +676,22 @@ void Heiarchy::renderHeiarchy(const std::filesystem::path &activeProjectPath)
 
     if (ImGui::BeginDragDropTarget())
     {
-        if (const ImGuiPayload *p = ImGui::AcceptDragDropPayload("EXPLORER_FILE"))
+        if (const ImGuiPayload *pNode = ImGui::AcceptDragDropPayload("HIER_NODE"))
         {
-            std::string path(static_cast<const char *>(p->Data));
+            PushUndoState();
+            for (int draggedIdx : selectedIndices)
+            {
+                nodes[draggedIdx].parentIndex = -1;
+            }
+        }
+        if (const ImGuiPayload *pExt = ImGui::AcceptDragDropPayload("EXPLORER_FILE"))
+        {
+            std::string path(static_cast<const char *>(pExt->Data));
             std::string ext = std::filesystem::path(path).extension().string();
             if (ext == ".obj" || ext == ".fbx")
                 AddModel(path);
         }
+
         ImGui::EndDragDropTarget();
     }
 
@@ -450,6 +699,14 @@ void Heiarchy::renderHeiarchy(const std::filesystem::path &activeProjectPath)
     {
         if (ImGui::BeginMenu("Add Object"))
         {
+            if (ImGui::MenuItem("Folder"))
+            {
+                AddFolder();
+            }
+            if (ImGui::MenuItem("Empty Object"))
+            {
+                AddEmpty();
+            }
             if (ImGui::MenuItem("Camera"))
             {
                 AddCamera();
@@ -494,6 +751,9 @@ void Heiarchy::renderHeiarchy(const std::filesystem::path &activeProjectPath)
     }
 
     ImGui::End();
+
+    proccessPendingDeletes();
+    proccessPendingDuplicates();
 }
 
 void Heiarchy::PushUndoState()

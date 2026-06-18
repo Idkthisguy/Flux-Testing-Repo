@@ -98,7 +98,7 @@ void Runtime::Start(const std::string &projectName, const std::filesystem::path 
         if (node.model)
         {
             newNode.model = std::make_shared<Model>(node.model->path);
-            
+
             for (size_t i = 0; i < node.model->meshes.size() && i < newNode.model->meshes.size(); ++i)
             {
                 newNode.model->meshes[i].material = node.model->meshes[i].material;
@@ -327,7 +327,7 @@ void Runtime::Update()
     {
         if (node.type == NodeType::Camera && node.isMainCamera)
         {
-            glm::mat4 transform = node.GetTransformMatrix();
+            glm::mat4 transform = node.GetWorldTransform(m_gameNodes);
             glm::vec3 camPos = node.position;
             glm::vec3 camFront = glm::normalize(glm::vec3(transform * glm::vec4(0, 0, -1, 0)));
             glm::vec3 camUp = glm::normalize(glm::vec3(transform * glm::vec4(0, 1, 0, 0)));
@@ -347,14 +347,14 @@ void Runtime::Update()
         {
             if (node.type == NodeType::Camera)
             {
-                glm::mat4 transform = node.GetTransformMatrix();
+                glm::mat4 transform = node.GetWorldTransform(m_gameNodes);
                 glm::vec3 camPos = node.position;
                 glm::vec3 camFront = glm::normalize(glm::vec3(transform * glm::vec4(0, 0, -1, 0)));
                 glm::vec3 camUp = glm::normalize(glm::vec3(transform * glm::vec4(0, 1, 0, 0)));
 
                 view = glm::lookAt(camPos, camPos + camFront, camUp);
-                proj =
-                    glm::perspective(glm::radians(node.fov > 0.f ? node.fov : 70.0f), (float)w / (float)h, 0.1f, 2000.0f);
+                proj = glm::perspective(glm::radians(node.fov > 0.f ? node.fov : 70.0f), (float)w / (float)h, 0.1f,
+                                        2000.0f);
                 activeCamPos = camPos;
                 cameraFound = true;
                 break;
@@ -368,9 +368,10 @@ void Runtime::Update()
     {
         if (node.model)
         {
-            glm::mat4 modelMat = node.GetTransformMatrix();
+            glm::mat4 modelMat = node.GetWorldTransform(m_gameNodes);
             m_renderer.DrawScene(*node.model, node.textureID, modelMat, view, proj, activeCamPos, m_gameNodes, 1.0f,
-                                 node.roughness, node.metallic, gameTime, node.baseColor, node.textureScale, node.pixelated);
+                                 node.roughness, node.metallic, gameTime, node.baseColor, node.textureScale,
+                                 node.pixelated);
         }
     }
 
