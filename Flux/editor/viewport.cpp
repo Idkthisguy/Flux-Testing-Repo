@@ -278,11 +278,15 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
     float timeOfDay = 14.f;
     bool hasLightingNode = false;
     SceneNode *ln = heiarchy.GetLightingNode();
+    float nightT = 0.0f;
+
+    glm::vec3 moonDir = glm::vec3(0.f, 1.f, 0.f);
     if (ln)
     {
+        moonDir = -ln->light.direction;
+
         const float kDawn = 6.0f, kDusk = 18.0f, kBlend = 1.0f;
         float tod = ln->light.timeOfDay;
-        float nightT = 0.0f;
         if (tod >= kDusk + kBlend || tod <= kDawn - kBlend)
         {
             nightT = 1.0f;
@@ -300,13 +304,15 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
             nightT = 0.0f;
         }
 
-        glm::vec3 moonDir = -ln->light.direction;
+
         sunDir = ln->light.direction;
         timeOfDay = ln->light.timeOfDay;
         hasLightingNode = true;
     }
 
-    renderer->DrawDepthPass(heiarchy.nodes, sunDir);
+    glm::vec3 shadowDir = (nightT >= 0.5f) ? moonDir : sunDir;
+    
+    renderer->DrawDepthPass(heiarchy.nodes, shadowDir, camera->Position);
 
     glManager->Resize((int)sz.x, (int)sz.y);
     glManager->Bind();

@@ -139,12 +139,13 @@ void Renderer3D::DrawDepthPass(const std::vector<SceneNode> &nodes, glm::vec3 li
     if (!shadowReady)
         return;
 
-    glm::vec3 anchor = glm::vec3(cameraPos.x, 0.0f, cameraPos.z);
+    glm::vec3 anchor = cameraPos;
     float range = 120.f; // cover 240x240 world units around the camera
 
     glm::vec3 ldir = glm::normalize(lightDir);
     glm::vec3 lp   = anchor - ldir * range;
-    glm::mat4 lv   = glm::lookAt(lp, anchor, glm::vec3(0.f, 1.f, 0.f));
+    glm::vec3 up = (glm::abs(ldir.y) > 0.99f) ? glm::vec3(0.f, 0.f, 1.f) : glm::vec3(0.f, 1.f, 0.f);
+    glm::mat4 lv = glm::lookAt(lp, anchor, up);
     glm::mat4 lpr  = glm::ortho(-range, range, -range, range, 0.5f, range * 4.0f);
     lightSpaceMatrix = lpr * lv;
 
@@ -155,10 +156,8 @@ void Renderer3D::DrawDepthPass(const std::vector<SceneNode> &nodes, glm::vec3 li
     setMat4(depthProgram, "lightSpaceMatrix", lightSpaceMatrix);
 
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
+    glDisable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
-    glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(2.0f, 4.0f);
 
     for (const auto &node : nodes)
     {
@@ -174,6 +173,7 @@ void Renderer3D::DrawDepthPass(const std::vector<SceneNode> &nodes, glm::vec3 li
     }
 
     glDisable(GL_POLYGON_OFFSET_FILL);
+    glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

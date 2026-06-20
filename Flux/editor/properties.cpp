@@ -575,6 +575,7 @@ void Properties::renderProperties(Heiarchy *h)
                 }
                 if (!node.texturePath.empty())
                 {
+
                     ImGui::Separator();
                     ImGui::Text("Texture Settings");
                     ImGui::Spacing();
@@ -586,6 +587,7 @@ void Properties::renderProperties(Heiarchy *h)
                         ImGui::TextUnformatted("Tiling U/V");
                         ImGui::TableSetColumnIndex(1);
                         ImGui::SetNextItemWidth(-1);
+
                         if (ImGui::DragFloat2("##ts", glm::value_ptr(node.textureScale), 0.01f, 0.01f, 100.0f, "%.2f"))
                         {
                         }

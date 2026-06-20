@@ -113,7 +113,7 @@ float ShadowFactor(vec4 fragPosLS, vec3 N, vec3 L) {
     if (proj.z > 1.0) return 1.0;
 
     float cosTheta = clamp(dot(N, L), 0.0, 1.0);
-    float bias = max(0.005 * (1.0 - cosTheta), 0.0002);
+    float bias = max(0.01 * (1.0 - cosTheta), 0.0005);
 
     vec2 ts = 1.0 / vec2(textureSize(shadowMap, 0));
 
@@ -197,11 +197,11 @@ void main() {
 
     if (hasMoonLight) {
         vec3 L = normalize(-moonLightDir);
+        float moonShadow = ShadowFactor(FragPosLightSpace, N, L);
         Lo += PBRContrib(N, V, L,
-                         moonLightColor * moonLightIntensity,
-                         1.0, albedo, F0, actRoughness, actMetallic);
+                        moonLightColor * moonLightIntensity,
+                        moonShadow, albedo, F0, actRoughness, actMetallic);
     }
-
     for (int i = 0; i < numPointLights; i++) {
         vec3  diff = pointPos[i] - FragPos;
         float dist = length(diff);
@@ -232,14 +232,14 @@ void main() {
                          att * spotFactor, albedo, F0, actRoughness, actMetallic);
     }
 
-    vec3 Fenv = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
-    vec3 kD_env = (vec3(1.0) - Fenv) * (1.0 - metallic);
+    vec3 Fenv = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, actRoughness);
+    vec3 kD_env = (vec3(1.0) - Fenv) * (1.0 - actMetallic);
     vec3 ambient = ambientColor * kD_env * albedo;
 
     ambient *= actAO;
 
     float hemi = 0.5 + 0.5 * dot(N, vec3(0.0, 1.0, 0.0));
-    ambient += Fenv * mix(ambientColor, ambientColor * 1.5, hemi) * (1.0 - roughness) * 0.15;
+    ambient += Fenv * mix(ambientColor, ambientColor * 1.5, hemi) * (1.0 - actRoughness) * 0.15;
 
     vec3 color = ambient + Lo;
 

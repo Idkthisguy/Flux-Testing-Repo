@@ -16,11 +16,14 @@ uniform mat4 view;
 uniform mat4 projection;
 uniform mat4 lightSpaceMatrix;
 uniform mat3 normalMatrix;
+
+uniform vec2 textureScale;
+
 void main()
 {
-    vec4 worldPos    = model * vec4(aPos, 1.0);
-    FragPos          = vec3(worldPos);
-    TexCoords        = aTexCoords;
+    vec4 worldPos = model * vec4(aPos, 1.0);
+    FragPos = vec3(worldPos);
+    TexCoords = aTexCoords * textureScale;
     FragPosLightSpace = lightSpaceMatrix * worldPos;
 
     Normal = normalize(normalMatrix * aNormal);
