@@ -148,6 +148,7 @@ void Renderer3D::DrawDepthPass(const std::vector<SceneNode> &nodes, glm::vec3 li
     glm::mat4 lv = glm::lookAt(lp, anchor, up);
     glm::mat4 lpr  = glm::ortho(-range, range, -range, range, 0.5f, range * 4.0f);
     lightSpaceMatrix = lpr * lv;
+    shadowTexelSize  = (range * 2.0f) / (float)shadowResolution; // world units per texel, for fragSrc.glsl's normal-offset bias
 
     glViewport(0, 0, shadowResolution, shadowResolution);
     glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
@@ -216,6 +217,7 @@ void Renderer3D::DrawScene(Model &model, unsigned int overrideTexID, glm::mat4 m
     if (shadowReady)
     {
         setMat4(shaderProgram, "lightSpaceMatrix", lightSpaceMatrix);
+        set1f(shaderProgram, "shadowTexelSize", shadowTexelSize);
         glActiveTexture(GL_TEXTURE7);
         glBindTexture(GL_TEXTURE_2D, shadowDepthTex);
         set1i(shaderProgram, "shadowMap", 7);
