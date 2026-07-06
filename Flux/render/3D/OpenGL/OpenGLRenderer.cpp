@@ -167,6 +167,13 @@ void Renderer3D::DrawDepthPass(const std::vector<SceneNode> &nodes, glm::vec3 li
         setMat4(depthProgram, "model", node.GetWorldTransform(nodes));
         for (auto &mesh : node.model->meshes)
         {
+            if (mesh.twoSided)
+                glDisable(GL_CULL_FACE);
+            else {
+                glEnable(GL_CULL_FACE);
+                glCullFace(GL_FRONT);
+            }
+
             glBindVertexArray(mesh.VAO);
             glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, nullptr);
             glBindVertexArray(0);
