@@ -4,15 +4,11 @@
 #include "output.h"
 #include "render/3D/OpenGL/Model.h"
 #include <algorithm>
-#include <cstring>
 #include <filesystem>
-
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/quaternion.hpp>
 
 namespace Flux
 {
+
 static bool BeginTable2Col(const char *id = "##t")
 {
     if (ImGui::BeginTable(id, 2, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings))
