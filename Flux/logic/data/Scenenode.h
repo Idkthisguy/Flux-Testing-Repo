@@ -152,6 +152,17 @@ struct SceneNode
         return local;
     }
 
+    template<typename T>
+    bool hasComponent() const {
+        for (const Component& comp : components) {
+            if (std::holds_alternative<T>(comp.data)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
     glm::vec3 velocity = glm::vec3(0.0f);
     bool isAnchored = false;
 

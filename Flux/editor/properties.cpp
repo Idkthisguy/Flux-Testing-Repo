@@ -376,6 +376,8 @@ void Properties::renderProperties(Heiarchy *h)
             int compIndex = 0;
             int componentToRemove = -1;
 
+            bool canRemove = true;
+
             for (auto &comp : node.components)
             {
                 ImGui::PushID(compIndex);
@@ -394,7 +396,7 @@ void Properties::renderProperties(Heiarchy *h)
                     {
                         // Reset here
                     }
-                    if (ImGui::MenuItem("Remove Component"))
+                    if (ImGui::MenuItem("Remove Component", nullptr, false, canRemove))
                     {
                         componentToRemove = compIndex;
                         if (h)
@@ -406,6 +408,18 @@ void Properties::renderProperties(Heiarchy *h)
                 if (isHeaderOpen)
                 {
                     ImGui::Spacing();
+
+
+                    if (node.type == NodeType::Camera && comp.name == "Camera Settings") {
+                        canRemove = true;
+                    } else if (node.type == NodeType::Mesh && comp.name == "Mesh Renderer") {
+                        canRemove = true;
+                    }
+
+                    if (!canRemove) {
+                        ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "WARNING: Essential Component!");
+                        canRemove = true;
+                    }
 
                     std::visit(
                         [&](auto &&arg) {

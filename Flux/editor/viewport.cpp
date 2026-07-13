@@ -274,6 +274,12 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
     glm::mat4 view = camera->GetViewMatrix();
     glm::mat4 proj = glm::perspective(glm::radians(70.0f), aspect, 0.1f, 2000.f);
 
+    for (auto &node : heiarchy.nodes) {
+        if (node.type == NodeType::Camera && !node.isMainCamera) {
+            view = camera->GetViewMatrix();    
+        }
+    }
+    
     glm::vec3 sunDir = glm::vec3(0.f, -1.f, 0.f);
     float timeOfDay = 14.f;
     bool hasLightingNode = false;
@@ -326,8 +332,10 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
     {
         if (!node.model)
             continue;
-        if (node.type == NodeType::Camera)
+        if (!node.hasComponent<MeshComponent>()) {
             continue;
+        }
+
         renderer->DrawScene(*node.model, node.textureID, node.GetWorldTransform(heiarchy.nodes), view, proj,
                             camera->Position, heiarchy.nodes, 1.0f, node.roughness, node.metallic, timeOfDay,
                             node.baseColor, node.textureScale, node.pixelated);
@@ -338,13 +346,16 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
         renderer->DrawScene(*ghostModel, 0, gt, view, proj, camera->Position, heiarchy.nodes, 0.45f);
     }
 
+    ImVec2 imagePos = ImGui::GetCursorScreenPos();
+
     if (showGrid)
         renderer->DrawGrid(view, proj, camera->Position);
 
-    for (auto &node : heiarchy.nodes)
+    for (SceneNode &node : heiarchy.nodes)
     {
-        if (node.type != NodeType::Camera)
+        if (!node.hasComponent<CameraComponent>()) {
             continue;
+        }
 
         if (node.textureID == 0)
         {
@@ -353,38 +364,16 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
                 node.textureID = TextureLoader::Load(p);
         }
 
-        if (node.textureID != 0)
-            renderer->DrawBillboard(node.textureID, node.position, 0.5f, view, proj);
+        int nodeIdx = &node - &heiarchy.nodes[0];
+        bool selected = heiarchy.isSelected(nodeIdx);
+        ImU32 col = selected ? IM_COL32(255, 230, 0, 255) : IM_COL32(0, 210, 255, 200);
+        CameraGizmoRenderer::Draw(node.GetWorldTransform(heiarchy.nodes), view, proj, imagePos, sz, node.fov, col);
     }
 
     glManager->Unbind();
 
-    ImVec2 imagePos = ImGui::GetCursorScreenPos();
-
     ImGui::Image(reinterpret_cast<void *>(static_cast<intptr_t>(glManager->GetTexture())), sz, ImVec2(0, 1),
                  ImVec2(1, 0));
-
-    for (auto &node : heiarchy.nodes)
-    {
-        if (node.type != NodeType::Camera)
-            continue;
-
-        if (node.textureID == 0)
-        {
-            std::string p = PathHelper::GetAssetPath("assets/icons/camera.png");
-            if (std::filesystem::exists(p))
-                node.textureID = TextureLoader::Load(p);
-        }
-
-        if (node.type == NodeType::Camera)
-        {
-
-            int nodeIdx = &node - &heiarchy.nodes[0];
-            bool selected = heiarchy.isSelected(nodeIdx);
-            ImU32 col = selected ? IM_COL32(255, 230, 0, 255) : IM_COL32(0, 210, 255, 200);
-            CameraGizmoRenderer::Draw(node.GetWorldTransform(heiarchy.nodes), view, proj, imagePos, sz, node.fov, col);
-        }
-    }
 
     ImVec2 mousePos = io.MousePos;
     ImVec2 mouseInCanvas(mousePos.x - imagePos.x, mousePos.y - imagePos.y);
