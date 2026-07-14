@@ -139,7 +139,7 @@ void Viewport::DrawLightGizmos(Heiarchy &heiarchy, glm::mat4 view, glm::mat4 pro
             continue;
         if (node.isLightingNode)
             continue;
-        if (node.textureID == 0 && node.type == NodeType::Camera)
+        if (node.textureID == 0 && node.hasComponent<CameraComponent>())
         {
             std::string iconPath = PathHelper::GetAssetPath("assets/icons/camera.png");
             node.textureID = TextureLoader::Load(iconPath);
@@ -275,7 +275,7 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
     glm::mat4 proj = glm::perspective(glm::radians(70.0f), aspect, 0.1f, 2000.f);
 
     for (auto &node : heiarchy.nodes) {
-        if (node.type == NodeType::Camera && !node.isMainCamera) {
+        if (node.hasComponent<CameraComponent>() && !node.isMainCamera) {
             view = camera->GetViewMatrix();    
         }
     }
@@ -330,10 +330,13 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
 
     for (auto &node : heiarchy.nodes)
     {
-        if (!node.model)
-            continue;
         if (!node.hasComponent<MeshComponent>()) {
             continue;
+        }
+
+        // No mode? No model -> CUBE
+        if (!node.model) {
+            node.model = heiarchy.GetOrLoadModel(PathHelper::GetAssetPath("assets/models/cube.obj"));
         }
 
         renderer->DrawScene(*node.model, node.textureID, node.GetWorldTransform(heiarchy.nodes), view, proj,
@@ -350,6 +353,8 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
 
     if (showGrid)
         renderer->DrawGrid(view, proj, camera->Position);
+    
+    ImGui::PushClipRect(imagePos, ImVec2(imagePos.x + sz.x, imagePos.y + sz.y), true);
 
     for (SceneNode &node : heiarchy.nodes)
     {
@@ -369,6 +374,8 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
         ImU32 col = selected ? IM_COL32(255, 230, 0, 255) : IM_COL32(0, 210, 255, 200);
         CameraGizmoRenderer::Draw(node.GetWorldTransform(heiarchy.nodes), view, proj, imagePos, sz, node.fov, col);
     }
+
+    ImGui::PopClipRect();
 
     glManager->Unbind();
 
@@ -421,6 +428,8 @@ void Viewport::RenderViewport(Heiarchy &heiarchy)
                         n.model = ghostModel;
                         n.name = heiarchy.GetUniqueName(std::filesystem::path(path).stem().string());
                         n.position = ghostPos;
+                        n.isAnchored = true;
+                        n.components.push_back({"Meshed Renderer", MeshComponent{"", 0.7f, 0.0f}});
                         heiarchy.nodes.push_back(n);
                         heiarchy.selectedIndices.clear();
                         heiarchy.selectedIndices.push_back((int)heiarchy.nodes.size() - 1);

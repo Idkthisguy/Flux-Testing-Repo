@@ -410,7 +410,7 @@ void Properties::renderProperties(Heiarchy *h)
                     ImGui::Spacing();
 
 
-                    if (node.type == NodeType::Camera && comp.name == "Camera Settings") {
+                    if (node.hasComponent<CameraComponent>() && comp.name == "Camera Settings") {
                         canRemove = true;
                     } else if (node.type == NodeType::Mesh && comp.name == "Mesh Renderer") {
                         canRemove = true;
