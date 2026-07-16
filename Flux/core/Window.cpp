@@ -473,7 +473,7 @@ void Window::update()
         ImGui::BeginDisabled(true);
 
     m_viewport.RenderViewport(m_heiarchy);
-    m_properties.renderProperties(&m_heiarchy);
+    m_properties.renderProperties(m_explorer, &m_heiarchy);
     m_heiarchy.renderHeiarchy(m_viewport.activeProjectPath);
 
     if (m_ribbon.editorLocked)
