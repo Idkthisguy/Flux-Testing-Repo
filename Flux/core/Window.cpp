@@ -308,12 +308,6 @@ void Window::update()
         case SDL_EVENT_QUIT:
             m_shouldClose = true;
             break;
-
-        /*case SDL_EVENT_TEXT_INPUT:
-
-            ImGui::GetIO().AddInputCharactersUTF8(event.text.text);
-            break;
-        */
         case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
             if (event.window.windowID == editorWindowID)
             {
